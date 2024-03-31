@@ -1,5 +1,6 @@
 const Client = require("../models/Client")
 const User = require("../models/User")
+const sequelize = require('../config/db.js');
 
 const router = require("express").Router()
 
@@ -30,11 +31,43 @@ router.get("/clients/:client_id", async (req, res) => {
 })
 
 router.post("/clients", async (req, res) => {
-  try {
+  sequelize.transaction(async (t) => {
     const userData = req.body
 
-    const newClient = await Client.create({
-      user: {
+    // Crea el usuario
+    const user = await User.create({
+      foto: userData.foto,
+      nombre_usuario: userData.nombre_usuario,
+      contraseña: userData.contraseña,
+      direccion: userData.direccion,
+      fecha_nacimiento: userData.fecha_nacimiento,
+      email: userData.email,
+      telefono: userData.telefono,
+      calificacion: userData.calificacion
+    }, { transaction: t });
+  
+    // Crea el cliente asociado al usuario recién creado
+    const client = await Client.create({
+      id: user.id // Asigna el ID del usuario recién creado
+    }, { transaction: t });
+    res.status(201).json({
+      ok: true,
+      status: 201,
+      message: "Cliente creado exitosamente",
+    });
+  }).catch((error) => {
+    // Si algo falla, revierte la transacción
+    res.status(500).send('Error al crear cliente');
+    console.error('Error al crear usuario y cliente:', error);
+  });
+})
+
+router.put("/clients/:client_id", async (req, res) => {
+  try {
+    const id = req.params.client_id
+    const userData = req.body
+    const updateClient = await User.update(
+      {
         foto: userData.foto,
         nombre_usuario: userData.nombre_usuario,
         contraseña: userData.contraseña,
@@ -43,38 +76,51 @@ router.post("/clients", async (req, res) => {
         email: userData.email,
         telefono: userData.telefono,
         calificacion: userData.calificacion
+      },
+      {
+        where: {
+          id: id
         }
-    }, {
-      include: [{
-        association: Client.User
-      }]
-    });
-
-    res.status(201).json({
-      ok: true,
-      status: 201,
-      message: "Cliente creado exitosamente",
-      body: {
-        user: newUser,
-        client: newClient
       }
-    });
+    )
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      message: "Cliente modificado exitosamente",
+    })
   } catch (error) {
-    console.error("Error al crear el cliente:", error);
-    res.status(500).json({
-      ok: false,
-      status: 500,
-      message: "Error al crear el cliente"
-    });
+      res.status(500).send('Error al modificar cliente')
+      console.error('Error al modificar cliente:', error)
   }
 })
 
-router.put("/clients/:client_id", (req, res) => {
-  res.send("Modificar")
-})
+router.delete("/clients/:client_id", async (req, res) => {
+  sequelize.transaction(async (t) => {
+    const id = req.params.client_id
 
-router.delete("/clients/:client_id", (req, res) => {
-  res.send("Eliminar")
+    const deleteClient = await Client.destroy({
+      where: {
+        id: id
+      },
+      transaction: t
+    })
+
+    const deleteUser = await User.destroy({
+      where: {
+        id: id
+      },
+      transaction: t
+    })
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      message: "Cliente eliminado exitosamente",
+    });
+  }).catch((error) => {
+    // Si algo falla, revierte la transacción
+    res.status(500).send('Error al eliminar cliente');
+    console.error('Error al eliminar cliente:', error);
+  });
 })
 
 module.exports = router
