@@ -111,11 +111,20 @@ router.delete("/clients/:client_id", async (req, res) => {
       },
       transaction: t
     })
-    res.status(200).json({
-      ok: true,
-      status: 200,
-      message: "Cliente eliminado exitosamente",
-    });
+    if (deleteClient && deleteUser != 0)
+    {
+      res.status(200).json({
+        ok: true,
+        status: 200,
+        message: "Cliente eliminado exitosamente",
+      });
+    } else {
+      res.status(500).json({
+        ok: false,
+        status: 500,
+        message: "No se encontro el cliente",
+      });
+    }
   }).catch((error) => {
     // Si algo falla, revierte la transacción
     res.status(500).send('Error al eliminar cliente');

@@ -8,8 +8,19 @@ const app = express();
 
 app.use(morgan("dev"))
 
+// Permitir solicitudes desde cualquier origen
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  next();
+});
+
 // Middleware para analizar el cuerpo de la solicitud en formato JSON
 app.use(express.json());
+
+
 
 app.get("/", (req, res) => {
   res.send('This is Express')

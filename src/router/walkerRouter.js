@@ -125,11 +125,22 @@ router.delete("/walkers/:walker_id", (req, res) => {
       },
       transaction: t
     })
-    res.status(200).json({
-      ok: true,
-      status: 200,
-      message: "Paseador eliminado exitosamente",
-    });
+
+    if (deleteWalker && deleteUser != 0)
+    {
+      res.status(200).json({
+        ok: true,
+        status: 200,
+        message: "Paseador eliminado exitosamente",
+      });
+    } else {
+      res.status(500).json({
+        ok: false,
+        status: 500,
+        message: "No se encontro el paseador",
+      });
+    }
+    
   }).catch((error) => {
     // Si algo falla, revierte la transacción
     res.status(500).send('Error al eliminar paseador');
