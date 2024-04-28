@@ -7,7 +7,6 @@ class User extends Model {}
 User.init({
   foto: {
     type: DataTypes.BLOB, // O podemos usar DataTypes.BLOB para almacenar imágenes en la base de datos
-    allowNull: false
   },
   nombre_usuario: {
     type: DataTypes.STRING,

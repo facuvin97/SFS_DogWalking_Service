@@ -3,6 +3,7 @@ const morgan = require('morgan')
 
 const routerClient = require("../router/clientRouter")
 const routerWalker = require("../router/walkerRouter")
+const routerUser = require("../router/userRouter")
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1", routerClient);
 app.use("/api/v1", routerWalker);
+app.use("/api/v1", routerUser);
 
 module.exports = app
