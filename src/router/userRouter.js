@@ -1,6 +1,11 @@
 const Client = require("../models/Client")
 const User = require("../models/User")
 const sequelize = require('../config/db.js');
+const multer = require('multer')
+const fs = require('fs') 
+
+
+const images = multer({dest: 'images/'})
 
 const router = require("express").Router()
 
@@ -43,6 +48,19 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post('/image/single/:nameImage', images.single('imagenPerfil'), (req, res) =>{
+  console.log(req.file)  
+  const username = req.params.nameImage; // Accede al parámetro directamente sin usar destructuración
+  const imagePath = saveImage(req.file, username);
+  res.send('Termina')
+} )
+function saveImage(file, username) {
+  const newPath = `./images/${username}.png`;
+  fs.renameSync(file.path, newPath);
+  console.log(newPath)
+  console.log(file.path)
+  return newPath;
+}
 
 // router.get("/users/:user_id", (req, res) => {
 //   res.send("Obtener usuario")

@@ -7,7 +7,7 @@ const routerUser = require("../router/userRouter")
 
 const app = express();
 
-app.use(morgan("dev"))
+app.use(morgan("dev")) 
 
 // Permitir solicitudes desde cualquier origen
 app.use((req, res, next) => {
@@ -20,7 +20,6 @@ app.use((req, res, next) => {
 
 // Middleware para analizar el cuerpo de la solicitud en formato JSON
 app.use(express.json());
-
 
 
 app.get("/", (req, res) => {
