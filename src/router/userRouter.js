@@ -1,11 +1,11 @@
 const Client = require("../models/Client")
 const User = require("../models/User")
-const sequelize = require('../config/db.js');
+const sequelize = require('../config/db.js')
 const multer = require('multer')
-const fs = require('fs'); 
 const path = require('path')
-const { where } = require("sequelize");
 
+
+const ruta = path.resolve(__dirname,'..','..','images')
 
 const images = multer({
   dest: 'images/',
@@ -63,31 +63,8 @@ router.post("/login", async (req, res) => {
     console.error("Error de autenticación:", error);
     res.status(500).json({ ok: false, message: "Error de autenticación" });
   }
-});
+})
 
-/* router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (req, res) =>{
-  console.log(req.file)  
-  const username = req.params.nameImage; // Accede al parámetro directamente sin usar destructuración
-  const imagePath = req.file.path; // Ruta temporal de la imagen subida
-  const user = await User.findOne({ where: { nombre_usuario: username } })
-  
-  //const imagePath = saveImage(req.file, username);
-  //res.send('Termina')
-
-  if (!user) {
-    // Maneja el caso donde el usuario no se encuentra
-    return res.status(404).json({ ok: false, message: "Usuario no encontrado" })
-  }
-
-  try {
-    // Actualiza el campo 'foto' del usuario con la ruta de la imagen
-    await user.update({ foto: imagePath })
-    res.status(200).json({ ok: true, message: "Imagen de perfil actualizada exitosamente" })
-  } catch (error) {
-    console.error("Error al actualizar imagen de perfil:", error)
-    res.status(500).json({ ok: false, message: "Error al actualizar imagen de perfil" })
-  }
-}) */
 router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (req, res) => {
   const username = req.params.nameImage;
 
@@ -98,14 +75,6 @@ router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (re
   }
 
   try {
-    // Elimina la imagen anterior si existe
-    if (user.foto) {
-      const previousImagePath = path.join(__dirname, '..', 'images', user.foto);
-      if (fs.existsSync(previousImagePath)) {
-        fs.unlinkSync(previousImagePath);
-      }
-    }
-
     // Actualiza el campo 'foto' del usuario con el nombre del archivo subido
     await user.update({ foto: req.file.filename });
 
@@ -126,11 +95,11 @@ router.get('/image/single/:nameImage', async (req, res) => {
 
     if (!user || !user.foto) {
       // Si no se encuentra el usuario o no tiene una ruta de imagen, devuelve un error 404
-      return res.status(404).send('Imagen no encontrada');
+      return res.status(404).send('Imagen no encontrada')
     }
 
     // Construye la ruta completa de la imagen en el servidor
-    const imagePath = path.join(__dirname, '..','..', 'images', user.foto);
+    const imagePath = path.join(ruta, user.foto);
     console.log(imagePath)
 
     // Envía la imagen como respuesta
@@ -140,29 +109,4 @@ router.get('/image/single/:nameImage', async (req, res) => {
     res.status(500).send('Error interno del servidor');
   }
 })
-//funcion para guardar y renombrar la immagen en un directorio local
-/* function saveImage(file, username) {
-  const newPath = `./images/${username}.png`;
-  fs.renameSync(file.path, newPath);
-  console.log(newPath)
-  console.log(file.path)
-  return newPath;
-} */
-
-// router.get("/users/:user_id", (req, res) => {
-//   res.send("Obtener usuario")
-// })
-
-// router.post("/users", (req, res) => {
-//   res.send("Agregar")
-// })
-
-// router.put("/users/:user_id", (req, res) => {
-//   res.send("Modificar")
-// })
-
-// router.delete("/users/:user_id", (req, res) => {
-//   res.send("Eliminar")
-// })
-
  module.exports = router
