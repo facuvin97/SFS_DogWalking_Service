@@ -7,6 +7,9 @@ const routerUser = require("../router/userRouter")
 
 const app = express();
 
+app.use(express.static('images'));
+
+
 app.use(morgan("dev")) 
 
 // Permitir solicitudes desde cualquier origen
