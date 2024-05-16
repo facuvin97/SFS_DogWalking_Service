@@ -4,8 +4,11 @@ const morgan = require('morgan')
 const routerClient = require("../router/clientRouter")
 const routerWalker = require("../router/walkerRouter")
 const routerUser = require("../router/userRouter")
+const routerTurn = require("../router/turnRouter")
 
 const app = express();
+
+const version = "/api/v1";
 
 app.use(express.static('images'));
 
@@ -29,8 +32,9 @@ app.get("/", (req, res) => {
   res.send('This is Express')
 });
 
-app.use("/api/v1", routerClient);
-app.use("/api/v1", routerWalker);
-app.use("/api/v1", routerUser);
+app.use(version, routerClient);
+app.use(version, routerWalker);
+app.use(version, routerUser);
+app.use(version, routerTurn);
 
 module.exports = app
