@@ -4,7 +4,7 @@ const sequelize = require('../config/db.js');
 const router = require("express").Router()
 
 //Obtener los turnos de un paseador
-router.get("/turns/:walker_id", async (req, res) => {
+router.get("/turns/walker/:walker_id", async (req, res) => {
   const walkerId = req.params.walker_id;
   const turns = await Turn.findAll({
     where: {
@@ -34,7 +34,7 @@ router.get("/turn/:turn_id", async (req, res) => {
 })
 
 //Agregar un turno
-router.post("/turns", async (req, res) => {
+router.post("/turn", async (req, res) => {
   try {
     const turnData = req.body;
 
@@ -61,13 +61,24 @@ router.post("/turns", async (req, res) => {
 });
 
 //Modificar un turno
-router.put("/turns/:turn_id", async (req, res) => {
+router.put("/turn/:turn_id", async (req, res) => {
   try {
-    const id = req.params.turn_id;
-    const turnData = req.body;
+    const id = req.params.turn_id
+    const turnData = req.body
+
+    // Verificar si el turno existe
+    const existingTurn = await Turn.findOne({ where: { id: id } })
+
+    if (!existingTurn) {
+      return res.status(404).json({
+        ok: false,
+        status: 404,
+        message: "Turno no encontrado"
+      })
+    }
 
     // Actualiza el turno
-    const updatedTurn = await Turn.update(
+    const [affectedRows] = await Turn.update(
       {
         dias: turnData.dias,
         hora_inicio: turnData.hora_inicio,
@@ -81,21 +92,21 @@ router.put("/turns/:turn_id", async (req, res) => {
           id: id
         }
       }
-    );
+    )
 
     res.status(200).json({
       ok: true,
       status: 200,
       message: "Turno modificado exitosamente"
-    });
+    })
   } catch (error) {
-    res.status(500).send('Error al modificar turno');
-    console.error('Error al modificar turno:', error);
+    res.status(500).send('Error al modificar turno')
+    console.error('Error al modificar turno:', error)
   }
-});
+})
 
 
-router.delete("/turns/:turn_id", async (req, res) => {
+router.delete("/turn/:turn_id", async (req, res) => {
   try {
     const id = req.params.turn_id;
 
@@ -117,13 +128,13 @@ router.delete("/turns/:turn_id", async (req, res) => {
         ok: false,
         status: 404,
         message: "No se encontró el turno"
-      });
+      })
     }
   } catch (error) {
-    res.status(500).send('Error al eliminar turno');
-    console.error('Error al eliminar turno:', error);
+    res.status(500).send('Error al eliminar turno')
+    console.error('Error al eliminar turno:', error)
   }
-});
+})
 
 
 module.exports = router
