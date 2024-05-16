@@ -19,7 +19,7 @@ router.get("/turns/:walker_id", async (req, res) => {
 })
 
 //Obtener un turno por su id
-router.get("/turns/:turn_id", async (req, res) => {
+router.get("/turn/:turn_id", async (req, res) => {
   const id = req.params.turn_id;
   const turn = await Turn.findOne({
     where: {
