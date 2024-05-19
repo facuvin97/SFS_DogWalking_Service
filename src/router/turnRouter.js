@@ -78,7 +78,7 @@ router.put("/turn/:turn_id", async (req, res) => {
     }
 
     // Actualiza el turno
-    const [affectedRows] = await Turn.update(
+    const updatedTurn = await Turn.update(
       {
         dias: turnData.dias,
         hora_inicio: turnData.hora_inicio,
@@ -93,7 +93,6 @@ router.put("/turn/:turn_id", async (req, res) => {
         }
       }
     )
-
     res.status(200).json({
       ok: true,
       status: 200,
