@@ -1,6 +1,7 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/db.js');
 const Message = require('./Message.js');
+const moment = require('moment')
 
 class User extends Model {}
 
@@ -8,66 +9,116 @@ User.init({
   foto: {
     type: DataTypes.STRING,
     allowNull: true,
+    validate: {
+      isUrl: {
+        msg: 'El campo "foto" debe ser una URL válida'
+      }
+    }
   },
   nombre_usuario: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    unique: {
+      msg: 'El nombre de usuario ya está en uso'
+    },
     validate: {
-      notEmpty: true,
-      len: [3,20],
+      notEmpty: {
+        msg: 'El campo "nombre_usuario" no puede estar vacío'
+      },
+      len: {
+        args: [3, 20],
+        msg: 'El campo "nombre_usuario" debe tener entre 3 y 20 caracteres'
+      }
     }
   },
   contraseña: {
     type: DataTypes.STRING,
     allowNull: false,
-    notEmpty: true,
-    validate:{
-      len: [7,30],
-    },
+    validate: {
+      notEmpty: {
+        msg: 'El campo "contraseña" no puede estar vacío'
+      },
+      len: {
+        args: [7, 30],
+        msg: 'El campo "contraseña" debe tener entre 7 y 30 caracteres'
+      }
+    }
   },
   direccion: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate:{
-      len: [1, 100]
-    },
+    validate: {
+      notEmpty: {
+        msg: 'El campo "direccion" no puede estar vacío'
+      },
+      len: {
+        args: [1, 100],
+        msg: 'El campo "direccion" debe tener entre 1 y 100 caracteres'
+      }
+    }
   },
   fecha_nacimiento: {
     type: DataTypes.DATE,
     allowNull: false,
-    validate:{
-      isDate: true,
-    },
+    validate: {
+      isDate: {
+        msg: 'El campo "fecha_nacimiento" debe ser una fecha válida'
+      },
+      notEmpty: {
+        msg: 'El campo "fecha_nacimiento" no puede estar vacío'
+      },
+      isOldEnough(value) {
+        const currentDate = moment();
+        const birthDate = moment(value);
+        if (currentDate.diff(birthDate, 'years') < 15) {
+          throw new Error('El usuario debe tener al menos 15 años');
+        }
+      }
+    }
   },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
-    validate:{
-      isEmail: true,
+    unique: {
+      msg: 'El email ya está en uso'
     },
+    validate: {
+      isEmail: {
+        msg: 'El campo "email" debe ser un email válido'
+      },
+      notEmpty: {
+        msg: 'El campo "email" no puede estar vacío'
+      }
+    }
   },
   telefono: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate:{
+    validate: {
+      notEmpty: {
+        msg: 'El campo "telefono" no puede estar vacío'
+      },
       len: {
         args: [5, 20],
-        msg: "El telefono debe tener un largo entre 5 y 20 caracteres"
+        msg: 'El campo "telefono" debe tener entre 5 y 20 caracteres'
       }
-    },
+    }
   },
   calificacion: {
     type: DataTypes.INTEGER,
-    validate:{
-      min: 1,
+    validate: {
+      min: {
+        args: [1],
+        msg: 'La calificación debe ser al menos 1'
+      },
       max: {
         args: [5],
-        msg: "Calificacion debe ser un numero igual o menor de 5"
+        msg: 'La calificación debe ser un número igual o menor a 5'
       },
-      isDecimal: true,
-    },
+      isInt: {
+        msg: 'La calificación debe ser un número entero'
+      }
+    }
   }
 }, {
   sequelize,

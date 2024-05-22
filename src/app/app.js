@@ -5,6 +5,7 @@ const routerClient = require("../router/clientRouter")
 const routerWalker = require("../router/walkerRouter")
 const routerUser = require("../router/userRouter")
 const routerTurn = require("../router/turnRouter")
+const routerService = require("../router/serviceRouter")
 
 const app = express();
 
@@ -36,5 +37,6 @@ app.use(version, routerClient);
 app.use(version, routerWalker);
 app.use(version, routerUser);
 app.use(version, routerTurn);
+app.use(version, routerService)
 
 module.exports = app

@@ -8,35 +8,60 @@ Service.init(
     fecha: {
       type: DataTypes.DATE,
       allowNull: false,
-      validate:{
-        isDate: true,
-      },
+      validate: {
+        isDate: {
+          msg: 'El campo "fecha" debe ser una fecha válida'
+        },
+        notEmpty: {
+          msg: 'El campo "fecha" no puede estar vacío'
+        }
+      }
     },
     direccionPickUp: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate:{
-        len: [1, 100]
-      },
+      validate: {
+        notEmpty: {
+          msg: 'El campo "direccionPickUp" no puede estar vacío'
+        },
+        len: {
+          args: [1, 100],
+          msg: 'El campo "direccionPickUp" debe tener entre 1 y 100 caracteres'
+        }
+      }
     },
     cantidad_mascotas: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate:{
-        min: 1,
+      validate: {
+        isInt: {
+          msg: 'El campo "cantidad_mascotas" debe ser un número entero'
+        },
+        min: {
+          args: [1],
+          msg: 'El campo "cantidad_mascotas" debe ser al menos 1'
+        },
+        notEmpty: {
+          msg: 'El campo "cantidad_mascotas" no puede estar vacío'
+        }
       }
     },
     nota: {
       type: DataTypes.STRING,
-      validate:{
-        len: [1, 255]
-      },
+      validate: {
+        len: {
+          args: [1, 255],
+          msg: 'El campo "nota" debe tener entre 1 y 255 caracteres'
+        },
+        notEmpty: {
+          msg: 'El campo "nota" no puede estar vacío'
+        }
+      }
     }
   },
   {
-    sequelize, 
+    sequelize,
     modelName: 'Service'
   }
-);
-
+)
 module.exports = Service;
