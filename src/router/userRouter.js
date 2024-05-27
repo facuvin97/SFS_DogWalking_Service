@@ -1,10 +1,12 @@
 const Client = require("../models/Client")
 const User = require("../models/User")
+const Walker= require("../models/Walker")
 const sequelize = require('../config/db.js')
 const multer = require('multer')
 const path = require('path')
 
 
+const defaultImagePath = path.resolve(__dirname, '../../images/no_image.png');
 const ruta = path.resolve(__dirname,'..','..','images')
 
 const images = multer({
@@ -97,6 +99,9 @@ router.get('/image/single/:nameImage', async (req, res) => {
       // Si no se encuentra el usuario o no tiene una ruta de imagen, devuelve un error 404
       return res.status(404).send('Imagen no encontrada')
     }
+     if(!user.foto){
+      return res.sendFile(defaultImagePath);
+    }
 
     // Construye la ruta completa de la imagen en el servidor
     const imagePath = path.join(ruta, user.foto);
@@ -106,6 +111,28 @@ router.get('/image/single/:nameImage', async (req, res) => {
     res.sendFile(imagePath);
   } catch (error) {
     console.error('Error al obtener la imagen del usuario:', error);
+    res.status(500).send('Error interno del servidor');
+  }
+})
+
+router.get('/image/walkers', async (req, res) => {
+  try {
+    
+    const walkers = await Walker.findAll({
+      include: {
+        model: User,
+        attributes: ['nombre_usuario', 'foto']
+      }
+    });
+
+    const walkerImages = walkers.map(walker => ({
+      nombre_usuario: walker.User.nombre_usuario,
+      foto: walker.User.foto ? `http://localhost:3001/images/${walker.User.foto}` : null
+    }));
+
+    res.status(200).json(walkerImages);
+  } catch (error) {
+    console.error('Error al obtener las imágenes de los paseadores:', error);
     res.status(500).send('Error interno del servidor');
   }
 })
