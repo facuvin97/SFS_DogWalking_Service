@@ -95,9 +95,9 @@ router.get('/image/single/:nameImage', async (req, res) => {
     // Busca el usuario en la base de datos por su nombre de usuario
     const user = await User.findOne({ where: { nombre_usuario: username } });
 
-    if (!user || !user.foto) {
-      // Si no se encuentra el usuario o no tiene una ruta de imagen, devuelve un error 404
-      return res.status(404).send('Imagen no encontrada')
+    if (!user) {
+      // Si no se encuentra el usuario devuelve un error 404
+      return res.status(404).send('Usuario no encontrado')
     }
      if(!user.foto){
       return res.sendFile(defaultImagePath);
