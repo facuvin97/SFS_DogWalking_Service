@@ -57,6 +57,11 @@ Service.init(
           msg: 'El campo "nota" no puede estar vacío'
         }
       }
+    },
+    aceptado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   },
   {
