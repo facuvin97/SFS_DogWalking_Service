@@ -1,5 +1,7 @@
 const { Router } = require('express');
 const Service = require('../models/Service.js');
+const Turn = require('../models/Turn.js');
+const { Op } = require('sequelize');
 const router = Router();
 
 // Obtener todos los servicios de un cliente
@@ -36,6 +38,45 @@ router.get('/services/turn/:turn_id', async (req, res) => {
         TurnId: turnId
       }
     });
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      body: services
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al obtener los servicios',
+      error: error.message
+    });
+    console.error('Error al obtener los servicios:', error);
+  }
+});
+
+//obtener todos los servicios de un paseador
+router.get('/services/walker/:walker_id', async (req, res) => {
+  const walkerId = req.params.walker_id;
+  try {
+    const turns = await Turn.findAll({
+      where: {
+        WalkerId: walkerId
+      }
+    })
+
+
+    // Extraer los IDs de los turnos
+    const turnIds = turns.map(turno => turno.id);
+
+
+    const services = await Service.findAll({
+      where: {
+        TurnId: {
+          [Op.in]: turnIds
+        }
+      }
+    });
+
     res.status(200).json({
       ok: true,
       status: 200,
