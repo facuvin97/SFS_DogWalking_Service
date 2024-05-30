@@ -182,6 +182,7 @@ router.put('/service/:service_id', async (req, res) => {
         direccionPickUp: serviceData.direccionPickUp,
         cantidad_mascotas: serviceData.cantidad_mascotas,
         nota: serviceData.nota,
+        aceptado: serviceData.aceptado,
         TurnId: serviceData.TurnId, // Asigna el ID del Turno al servicio
         ClientId: serviceData.ClientId // Asigna el ID del Cliente al servicio
       },
