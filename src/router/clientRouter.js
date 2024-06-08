@@ -1,6 +1,7 @@
 const Client = require("../models/Client")
 const User = require("../models/User")
 const sequelize = require('../config/db.js');
+const Pet = require('../models/Pet');
 
 const router = require("express").Router()
 
@@ -131,5 +132,35 @@ router.delete("/clients/:client_id", async (req, res) => {
     console.error('Error al eliminar cliente:', error);
   });
 })
+
+router.get("/clients/:client_id/pets", async (req, res) => {
+  const clientId = req.params.client_id;
+
+  try {
+    const pets = await Pet.findAll({
+      where: {
+        clientId: clientId
+      }
+    });
+
+    if (pets.length === 0) {
+      res.status(404).json({
+        ok: false,
+        status: 404,
+        message: "No se encontraron mascotas para este dueño"
+      });
+    } else {
+      res.status(200).json({
+        ok: true,
+        status: 200,
+        body: pets
+      });
+    }
+  } catch (error) {
+    console.error('Error al obtener las mascotas:', error);
+    res.status(500).send('Error al obtener las mascotas');
+  }
+});
+
 
 module.exports = router

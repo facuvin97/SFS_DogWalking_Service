@@ -5,6 +5,7 @@ const Walker = require("./Walker");
 const Service = require("./Service");
 const Client = require("./Client");
 const Notification = require("./Notification")
+const Pet = require("./Pet");
 
 //Mensaje - Usuario
 Message.belongsTo(User, { as: 'sender', /*foreignKey: 'senderId'*/ });
@@ -25,3 +26,18 @@ Turn.hasMany(Service);
 //Cliente - Servicio
 Service.belongsTo(Client)
 Client.hasMany(Service)
+
+// Cliente - Mascota
+Client.hasMany(Pet, { foreignKey: 'clientId' });
+Pet.belongsTo(Client, { foreignKey: 'clientId' });
+
+module.exports = {
+    Message,
+    Turn,
+    User,
+    Walker,
+    Service,
+    Client,
+    Notification,
+    Pet
+  };

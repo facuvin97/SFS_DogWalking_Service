@@ -1,6 +1,5 @@
 const Turn = require('../models/Turn.js')
 const sequelize = require('../config/db.js');
-
 const router = require("express").Router()
 
 //Obtener los turnos de un paseador
