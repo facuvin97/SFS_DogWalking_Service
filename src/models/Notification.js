@@ -14,6 +14,7 @@ Notification.init({
   },
   fechaHora: {
     type: DataTypes.DATE, // Utilizamos DataTypes.DATE para representar DATETIME
+    defaultValue: DataTypes.NOW,
     allowNull: false,
   },
   leido: {

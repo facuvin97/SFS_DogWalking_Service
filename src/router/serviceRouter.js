@@ -1,7 +1,9 @@
 const { Router } = require('express');
 const Service = require('../models/Service.js');
 const Turn = require('../models/Turn.js');
+const Walker = require('../models/Walker.js');
 const { Op } = require('sequelize');
+const User = require('../models/User.js');
 const router = Router();
 
 // Obtener todos los servicios de un cliente
@@ -36,7 +38,7 @@ router.get('/services/turn/:turn_id', async (req, res) => {
     const services = await Service.findAll({
       where: {
         TurnId: turnId
-      }
+      },
     });
     res.status(200).json({
       ok: true,
@@ -54,14 +56,14 @@ router.get('/services/turn/:turn_id', async (req, res) => {
   }
 });
 
-//obtener todos los servicios de un paseador
+//obtener todos los servicios de un paseador, con su turno y paseador
 router.get('/services/walker/:walker_id', async (req, res) => {
   const walkerId = req.params.walker_id;
   try {
     const turns = await Turn.findAll({
       where: {
         WalkerId: walkerId
-      }
+      },
     })
 
 
@@ -73,6 +75,13 @@ router.get('/services/walker/:walker_id', async (req, res) => {
       where: {
         TurnId: {
           [Op.in]: turnIds
+        }
+      },
+      include: {
+        model: Turn,
+        include: {
+          model: Walker,
+          include: User
         }
       }
     });
