@@ -1,4 +1,6 @@
 const Turn = require('../models/Turn.js')
+const Servicio = require('../models/Service.js')
+const Notification = require('../models/Notification.js')
 const sequelize = require('../config/db.js');
 const router = require("express").Router()
 
@@ -105,15 +107,46 @@ router.put("/turn/:turn_id", async (req, res) => {
 
 
 router.delete("/turn/:turn_id", async (req, res) => {
-  try {
+  sequelize.transaction(async (t) => {
     const id = req.params.turn_id;
 
+    // traigo todos los servicios del turno a eliminar
+    const servicios = await Servicio.findAll({
+      where: {
+        TurnId: id
+      }
+    })
+
+    // Eliminar los servicios asociados al turno
+    if (servicios.length > 0) {
+      const deleteServices = await Servicio.destroy({
+        where: {
+          TurnId: id
+        }, 
+        transaction: t
+      });
+    }
+  
     // Elimina el turno
     const deleteTurn = await Turn.destroy({
       where: {
         id: id
-      }
+      },
+      transaction: t
     });
+
+
+
+    // Enviar notificaciones
+    if (servicios.length > 0) {
+      for (const servicio of servicios) {
+        await Notification.create({
+          titulo: 'Servicio cancelado',
+          contenido: `El servicio para la fecha ${servicio.fecha} ha sido cancelado`,
+          userId: servicio.ClientId
+        }, { transaction: t });
+      }
+    }
 
     if (deleteTurn !== 0) {
       res.status(200).json({
@@ -128,10 +161,10 @@ router.delete("/turn/:turn_id", async (req, res) => {
         message: "No se encontró el turno"
       })
     }
-  } catch (error) {
+  }).catch ((error) => {
     res.status(500).send('Error al eliminar turno')
     console.error('Error al eliminar turno:', error)
-  }
+  })
 })
 
 

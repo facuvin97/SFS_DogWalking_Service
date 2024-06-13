@@ -51,11 +51,13 @@ router.post("/clients", async (req, res) => {
     const client = await Client.create({
       id: user.id // Asigna el ID del usuario recién creado
     }, { transaction: t });
+
     res.status(201).json({
       ok: true,
       status: 201,
       message: "Cliente creado exitosamente",
     });
+    
   }).catch((error) => {
     // Si algo falla, revierte la transacción
     res.status(500).send('Error al crear cliente');
