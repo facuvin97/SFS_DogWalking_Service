@@ -1,6 +1,7 @@
 const User = require("../models/User")
 const Notification = require("../models/Notification.js")
 const sequelize = require('../config/db.js');
+const { Op } = require('sequelize');
 
 
 const router = require("express").Router()
@@ -32,10 +33,21 @@ router.post("/notifications", async (req, res) => {
   }
 });
 
-//Obtener las notificaciones de un usuario
+// Obtener las notificaciones de un usuario
 router.get('/notifications/:userId', async (req, res) => {
   try {
-    const notifications = await Notification.findAll({ where: { userId: req.params.userId } });
+    // Calcular la fecha de hace 30 días
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30));
+
+    const notifications = await Notification.findAll({ 
+      where: { 
+        userId: req.params.userId,
+        fechaHora: {
+          [Op.gte]: thirtyDaysAgo // Obtener notificaciones de hace 30 días como máximo
+        }
+      } 
+    });
     res.status(200).json(notifications);
   } catch (error) {
     res.status(400).json({ error: error.message });

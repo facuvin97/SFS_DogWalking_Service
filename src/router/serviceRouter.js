@@ -241,15 +241,23 @@ router.put('/service/:service_id', async (req, res) => {
 
 // Eliminar un servicio
 router.delete('/service/:service_id', async (req, res) => {
-  try {
+  sequelize.transaction(async (t) => {
     const id = req.params.service_id;
 
     // Aca tenemos que diferenciar que tipo de usuario esta eliminando el servicio, para ver a quien le mandamos la notificacion
-    const userType = req.params.execUserType;
+    const userType = req.body.execUserType;
+
+    const userId = req.body.userId;
+    const fecha = req.body.fecha;
+
+    const nombreCliente = req.body.nombreCliente ?? null;
+
+
 
     // Elimina el servicio
     const deleteService = await Service.destroy({
-      where: { id: id }
+      where: { id: id },
+      transaction: t
     });
 
     if (deleteService) {
@@ -265,7 +273,31 @@ router.delete('/service/:service_id', async (req, res) => {
         message: 'Servicio no encontrado'
       });
     }
-  } catch (error) {
+
+    if (userType === 'walker') {
+      await Notification.create({
+        titulo: 'Servicio cancelado',
+        contenido: `El servicio para la fecha ${fecha} ha sido cancelado`,
+        userId: userId
+      }, { transaction: t });
+    } else if (userType === 'client') {
+      await Notification.create({
+        titulo: 'Servicio cancelado',
+        contenido: `El usuario ${nombreCliente} ha cancelado el servicio para la fecha ${fecha}`,
+        userId: userId
+      }, { transaction: t });
+    } else { //si no viene lo que espero en walker, hago rollback
+      res.status(500).json({
+        ok: false,
+        status: 500,
+        message: 'Tipo de usuario no valido',
+      });
+      t.rollback;
+    }
+
+
+
+  }).catch ((error) => {
     res.status(500).json({
       ok: false,
       status: 500,
@@ -273,7 +305,7 @@ router.delete('/service/:service_id', async (req, res) => {
       error: error.message
     });
     console.error('Error al eliminar servicio:', error);
-  }
+  })
 });
 
 module.exports = router;
