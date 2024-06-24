@@ -6,10 +6,15 @@ const Service = require("./Service");
 const Client = require("./Client");
 const Notification = require("./Notification")
 const Pet = require("./Pet");
+const Review = require("./Review");
 
 //Mensaje - Usuario
 Message.belongsTo(User, { as: 'sender', /*foreignKey: 'senderId'*/ });
 Message.belongsTo(User, { as: 'receiver', /*foreignKey: 'receiverId'*/ });
+
+//Reseña - Usuario
+Review.belongsTo(User, { as: 'writer', /*foreignKey: 'senderId'*/ });
+Review.belongsTo(User, { as: 'receiver', /*foreignKey: 'receiverId'*/ });
 
 //Notificacion - Usuario
 User.hasMany(Notification, { foreignKey: 'userId' });

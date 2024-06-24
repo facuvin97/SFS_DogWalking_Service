@@ -16,7 +16,8 @@ router.get('/services/client/:client_id', async (req, res) => {
     const services = await Service.findAll({
       where: {
         ClientId: clientId
-      }
+      }, 
+      include: Turn
     });
     res.status(200).json({
       ok: true,

@@ -1,12 +1,24 @@
 const User = require("../models/User")
 const Walker = require("../models/Walker")
 const sequelize = require('../config/db.js');
+const Turn = require("../models/Turn.js");
 const router = require("express").Router()
 
+// devuelve todo los walkers, incluyendo info de usuario y turno
 router.get("/walkers", async (req, res) => {
   const walkers = await Walker.findAll({
-    include: User
+    include: [
+      {
+        model: User,
+      },
+      {
+        model: Turn,
+      }
+    ]
   })
+
+  // Aca podemos formatear el json antes de devolverlo
+
   res.status(200).json({
     ok: true,
     status: 200,

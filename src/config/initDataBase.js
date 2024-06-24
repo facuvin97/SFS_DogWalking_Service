@@ -45,8 +45,8 @@ async function cleanupIndexes() {
 // Ejecutar el script de limpieza de índices y luego sincronizar la base de datos
 async function initDatabase() {
   try {
-    await cleanupIndexes();
     await sequelize.sync({ alter: true }); // Opción 'alter' para sincronización no destructiva
+    await cleanupIndexes();
     console.log('Sincronización completada.');
   } catch (error) {
     console.error('Error durante la inicialización:', error);
