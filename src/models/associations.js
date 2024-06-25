@@ -44,5 +44,5 @@ module.exports = {
     Service,
     Client,
     Notification,
-    Pet
+    Pet,
   };
