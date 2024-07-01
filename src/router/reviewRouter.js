@@ -32,6 +32,7 @@ router.post("/review", async (req, res) => {
   try {
     const reviewData = req.body;
 
+
     // Creo la review
     const review = await Review.create({
       valoracion: reviewData.valoracion,
@@ -40,6 +41,7 @@ router.post("/review", async (req, res) => {
       receiverId: reviewData.receiverId
     }, { transaction: t });
 
+
     // Aseguramos que updateUserRating se ejecute después del commit
     t.afterCommit(async () => {
       try {
@@ -47,11 +49,11 @@ router.post("/review", async (req, res) => {
       } catch (error) {
         console.log(error.message)
       }
-
     });
 
     // Traigo los datos del servicio
     const service = await Service.findByPk(reviewData.serviceId, { transaction: t });
+
 
     // Verifico que el servicio exista
     if (!service) {
