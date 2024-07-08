@@ -19,8 +19,8 @@ const images = multer({
       cb(null, 'images/');
     },
     filename: function (req, file, cb) {
-      const username = req.params.nameImage;
-      const fileName = `${username}.png`;
+      const name = req.params.nameImage ?? req.body.nameImage;
+      const fileName = `${name}.png`;
       cb(null, fileName);
     }
   })
@@ -67,6 +67,7 @@ router.post("/login", async (req, res) => {
   }
 })
 
+//agregar o cambiar foto de perfil
 router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (req, res) => {
   const username = req.params.nameImage;
 
@@ -87,6 +88,50 @@ router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (re
   }
 })
 
+// subir fotos al perfil del paseador
+router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), async (req, res) => {
+  const walkerId = req.params.walkerId;
+
+  const walker = await Walker.findOne({ where: { id: walkerId }, include: User });
+
+  if (!walker) {
+    return res.status(404).json({ ok: false, message: "Paseador no encontrado" });
+  }
+
+  try {
+    // Obtén la lista actual de fotos
+    const currentFotos = walker.fotos || [];
+    
+    // Función para generar un nombre de archivo único
+    const generateUniqueFilename = (filename, existingFilenames) => {
+      let newFilename = filename;
+      let counter = 1;
+      while (existingFilenames.includes(newFilename)) {
+        const [name, extension] = filename.split('.');
+        newFilename = `${name}_${counter}.${extension}`;
+        counter++;
+      }
+      return newFilename;
+    };
+
+    // Genera un nombre de archivo único si ya existe
+    const newFoto = req.file.filename;
+    const uniqueFoto = generateUniqueFilename(newFoto, currentFotos);
+
+    // Agrega la nueva URL a la lista
+    const updatedFotos = [...currentFotos, { url: uniqueFoto }];
+
+    // Actualiza el campo 'fotos' del walker
+    await walker.update({ fotos: updatedFotos });
+
+    res.status(200).json({ ok: true, message: "Foto subida con éxito" });
+  } catch (error) {
+    console.error("Error al actualizar imagen de perfil:", error);
+    res.status(500).json({ ok: false, message: "Error al actualizar imagen de perfil" });
+  }
+});
+
+
 //solicitud de imagen
 router.get('/image/single/:nameImage', async (req, res) => {
   const username = req.params.nameImage;
@@ -99,7 +144,8 @@ router.get('/image/single/:nameImage', async (req, res) => {
       // Si no se encuentra el usuario devuelve un error 404
       return res.status(404).send('Usuario no encontrado')
     }
-     if(!user.foto){
+
+    if(!user.foto){
       return res.sendFile(defaultImagePath);
     }
 
@@ -111,6 +157,22 @@ router.get('/image/single/:nameImage', async (req, res) => {
     res.sendFile(imagePath);
   } catch (error) {
     console.error('Error al obtener la imagen del usuario:', error);
+    res.status(500).send('Error interno del servidor');
+  }
+})
+
+router.get('/image/walkers/:imageName', async (req, res) => {
+
+  const imageName = req.params.imageName;
+  try {
+    
+    // Construye la ruta completa de la imagen en el servidor
+    const imagePath = path.join(ruta, imageName);
+
+    // Envía la imagen como respuesta
+    res.sendFile(imagePath);
+  } catch (error) {
+    console.error('Error al obtener las imágenes de los paseadores:', error);
     res.status(500).send('Error interno del servidor');
   }
 })
@@ -136,4 +198,5 @@ router.get('/image/walkers', async (req, res) => {
     res.status(500).send('Error interno del servidor');
   }
 })
- module.exports = router
+
+module.exports = router
