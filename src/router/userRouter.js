@@ -4,10 +4,13 @@ const Walker= require("../models/Walker")
 const sequelize = require('../config/db.js')
 const multer = require('multer')
 const path = require('path')
+const fs = require('fs');
+
 
 
 const defaultImagePath = path.resolve(__dirname, '../../images/no_image.png');
 const ruta = path.resolve(__dirname,'..','..','images')
+
 
 const images = multer({
   dest: 'images/',
@@ -19,9 +22,26 @@ const images = multer({
       cb(null, 'images/');
     },
     filename: function (req, file, cb) {
-      const name = req.params.nameImage ?? req.body.nameImage;
-      const fileName = `${name}.png`;
-      cb(null, fileName);
+      let finalName = '';
+
+      if (req.params.nameImage) {
+        finalName = req.params.nameImage + '.png'
+      } else {
+        const originalName = file.originalname;
+        const extension = path.extname(originalName);
+        const baseName = path.basename(originalName, extension);
+
+        finalName = baseName + extension;
+        let counter = 1;
+
+        while (fs.existsSync(path.join('images', finalName))) {
+          finalName = `${baseName}_${counter}${extension}`;
+          counter++;
+        }
+      }
+
+      console.log('finalName',finalName)
+      cb(null, finalName);
     }
   })
 })
@@ -116,6 +136,7 @@ router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), a
 
     // Genera un nombre de archivo único si ya existe
     const newFoto = req.file.filename;
+    console.log('req.file: ', req.file)
     const uniqueFoto = generateUniqueFilename(newFoto, currentFotos);
 
     // Agrega la nueva URL a la lista
