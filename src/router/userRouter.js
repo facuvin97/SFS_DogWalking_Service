@@ -124,7 +124,7 @@ router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), a
     // Actualiza el campo 'fotos' del walker
     await walker.update({ fotos: updatedFotos });
 
-    res.status(200).json({ ok: true, message: "Foto subida con éxito" });
+    res.status(200).json({ ok: true, message: "Foto subida con éxito", newImage: { url: uniqueFoto } });
   } catch (error) {
     console.error("Error al actualizar imagen de perfil:", error);
     res.status(500).json({ ok: false, message: "Error al actualizar imagen de perfil" });
