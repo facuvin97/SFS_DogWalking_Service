@@ -31,7 +31,13 @@ const images = multer({
         const extension = path.extname(originalName);
         const baseName = path.basename(originalName, extension);
 
-        finalName = baseName + extension;
+        if (extension !== '.png' && extension !== '.jpg') { // si la extension no es jpg ni png, la hago png
+          finalName = baseName + '.png';
+        } else { // si es jpg o png la guardo con esa extension
+          finalName = baseName + extension;
+        }
+
+        
         let counter = 1;
 
         while (fs.existsSync(path.join('images', finalName))) {
@@ -125,6 +131,15 @@ router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), a
     // Función para generar un nombre de archivo único
     const generateUniqueFilename = (filename, existingFilenames) => {
       let newFilename = filename;
+      const [name, extension] = filename.split('.');
+
+      if (extension !== 'png' && extension !== 'jpg') { //si la extension no es jpg ni png, le asigno png
+        newFilename = `${name}.png`
+      } else { // si es jpg o png la dejo como esta
+        newFilename = `${name}.${extension}`
+      }
+      
+      // si el nombre ya existe, lo modifico para que sea unico
       let counter = 1;
       while (existingFilenames.includes(newFilename)) {
         const [name, extension] = filename.split('.');
@@ -136,7 +151,6 @@ router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), a
 
     // Genera un nombre de archivo único si ya existe
     const newFoto = req.file.filename;
-    console.log('req.file: ', req.file)
     const uniqueFoto = generateUniqueFilename(newFoto, currentFotos);
 
     // Agrega la nueva URL a la lista
@@ -181,6 +195,7 @@ router.get('/image/single/:nameImage', async (req, res) => {
     res.status(500).send('Error interno del servidor');
   }
 })
+
 
 router.get('/image/walkers/:imageName', async (req, res) => {
 
