@@ -7,6 +7,12 @@ const Client = require("./Client");
 const Notification = require("./Notification")
 const Pet = require("./Pet");
 const Review = require("./Review");
+const Bill = require("./Bill");
+
+//Servicio - Factura
+
+Bill.belongsTo(Service)
+Service.hasOne(Bill)
 
 //Mensaje - Usuario
 Message.belongsTo(User, { as: 'sender', /*foreignKey: 'senderId'*/ });
@@ -45,4 +51,5 @@ module.exports = {
     Client,
     Notification,
     Pet,
+    Bill,
   };

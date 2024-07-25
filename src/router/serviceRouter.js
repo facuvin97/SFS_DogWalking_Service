@@ -7,6 +7,7 @@ const User = require('../models/User.js');
 const Client = require('../models/Client.js');
 const Notification = require('../models/Notification.js');
 const sequelize = require('../config/db.js');
+const Bill = require('../models/Bill.js');
 const router = Router();
 
 // Obtener todos los servicios de un cliente
@@ -144,6 +145,8 @@ router.post('/service', async (req, res) => {
   sequelize.transaction(async (t) => {
     const serviceData = req.body;
 
+    console.log("\n\n\n\n\n\n\n\n\nfecha body: " , serviceData.fecha)
+
     // Crea el servicio
     const service = await Service.create({
       fecha: serviceData.fecha,
@@ -153,9 +156,10 @@ router.post('/service', async (req, res) => {
       TurnId: serviceData.TurnId, // Asigna el ID del Turno al servicio
       ClientId: serviceData.ClientId // Asigna el ID del Cliente al servicio
     }, {transaction: t});
-    
     //traigo los datos del cliente, para mostrar en la notificacion
     const client = await User.findByPk(serviceData.ClientId, {transaction: t})
+    console.log("\n\n\n\n\n\n\n\n\nfecha servicio: " , service.fecha)
+
 
     //traigo el turno para tener el id del walker
     const turn = await Turn.findByPk(serviceData.TurnId, {transaction: t})
@@ -217,6 +221,18 @@ router.put('/service/:service_id', async (req, res) => {
       },
     );
 
+    //traigo el turno para tener el id del walker
+    const turn = await Turn.findByPk(existingService.TurnId, {transaction: t})
+    const fecha = new Date().toLocaleDateString()
+    const today = (fecha)
+    console.log("\n\n\nfecha: " ,fecha)
+    console.log("\n\n\ntoday: " ,today)
+    const bill = await Bill.create({ 
+      fecha: today,     
+      monto: existingService.cantidad_mascotas * turn.tarifa,
+      ServiceId: existingService.id,     
+    }, {transaction: t});
+    
     // envio una notificacion al cliente
     await Notification.create({
       titulo: 'Solicitud de servicio aceptada',
