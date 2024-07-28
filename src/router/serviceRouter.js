@@ -9,6 +9,7 @@ const Notification = require('../models/Notification.js');
 const sequelize = require('../config/db.js');
 const Bill = require('../models/Bill.js');
 const router = Router();
+const moment = require('moment-timezone');
 
 // Obtener todos los servicios de un cliente
 router.get('/services/client/:client_id', async (req, res) => {
@@ -186,6 +187,8 @@ router.post('/service', async (req, res) => {
     });
     console.error('Error al crear servicio:', error);
   })
+
+  console.log('\n\n\nfecha despues de transeccion', res)
 });
 
 // Modificar un servicio (solo se usa para cambiar el valor de aceptado, cuando el paseador acepta la solicitud)
@@ -223,16 +226,19 @@ router.put('/service/:service_id', async (req, res) => {
 
     //traigo el turno para tener el id del walker
     const turn = await Turn.findByPk(existingService.TurnId, {transaction: t})
-    const fecha = new Date().toLocaleDateString()
-    const today = (fecha)
-    console.log("\n\n\nfecha: " ,fecha)
-    console.log("\n\n\ntoday: " ,today)
+    const today = moment().tz('America/Montevideo') // Reemplaza 'America/Bogota' con la zona horaria de tu país
+    //const fechaHora = now.format('YYYY-MM-DD HH:mm:ss');
+    //const fecha = new Date().toISOString();
+    //const today = fecha;
+    //console.log("\n\n\nfecha: " ,fechaHora)
+    console.log("\n\n\nfectura today: " ,today)
     const bill = await Bill.create({ 
       fecha: today,     
       monto: existingService.cantidad_mascotas * turn.tarifa,
       ServiceId: existingService.id,     
     }, {transaction: t});
-    
+    console.log("\n\n\nfectura today despues de creada: " ,bill.fecha)
+
     // envio una notificacion al cliente
     await Notification.create({
       titulo: 'Solicitud de servicio aceptada',
@@ -254,6 +260,8 @@ router.put('/service/:service_id', async (req, res) => {
     });
     console.error('Error al modificar servicio:', error);
   })
+  console.log("\n\n\nfectura today despues de transaccion: " ,res)
+
 });
 
 // Eliminar un servicio

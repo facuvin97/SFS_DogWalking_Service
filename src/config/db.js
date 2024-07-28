@@ -4,10 +4,10 @@ const { Sequelize } = require('sequelize');
 const sequelize = new Sequelize('proyecto_final_bios', 'root', 'root', {
   host: 'localhost',
   dialect: 'mysql',
-  //timezone: '-03:00', // Zona horaria de Uruguay (GMT -0300)
-  //dialectOptions: {
-    //timezone: '-03:00', // Ajuste adicional de zona horaria si es necesario
-  //},
+  timezone: '-03:00', // Zona horaria de Uruguay (GMT -0300)
+  dialectOptions: {
+    timezone: '-03:00', // Ajuste adicional de zona horaria si es necesario
+  },
 });
 
 // Testeo de conexion a la bdd
