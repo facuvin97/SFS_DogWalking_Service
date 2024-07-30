@@ -10,6 +10,9 @@ const sequelize = require('../config/db.js');
 const Bill = require('../models/Bill.js');
 const router = Router();
 const moment = require('moment-timezone');
+const { format } = require('date-fns');
+
+
 
 // Obtener todos los servicios de un cliente
 router.get('/services/client/:client_id', async (req, res) => {
@@ -147,10 +150,12 @@ router.post('/service', async (req, res) => {
     const serviceData = req.body;
 
     console.log("\n\n\n\n\n\n\n\n\nfecha body: " , serviceData.fecha)
+    const fechaUTC = moment.tz(serviceData.fecha, 'America/Montevideo').utc().format();
+
 
     // Crea el servicio
     const service = await Service.create({
-      fecha: serviceData.fecha,
+      fecha: fechaUTC,
       direccionPickUp: serviceData.direccionPickUp,
       cantidad_mascotas: serviceData.cantidad_mascotas,
       nota: serviceData.nota,
@@ -231,6 +236,9 @@ router.put('/service/:service_id', async (req, res) => {
     //const fecha = new Date().toISOString();
     //const today = fecha;
     //console.log("\n\n\nfecha: " ,fechaHora)
+
+    //TODO:
+    
     console.log("\n\n\nfectura today: " ,today)
     const bill = await Bill.create({ 
       fecha: today,     
@@ -274,6 +282,7 @@ router.delete('/service/:service_id', async (req, res) => {
 
     const userId = req.body.userId;
     const fecha = req.body.fecha;
+    const fechaFormateada = format(fecha, 'dd/MM/yyyy');
 
     const nombreCliente = req.body.nombreCliente ?? null;
 
@@ -302,22 +311,23 @@ router.delete('/service/:service_id', async (req, res) => {
     if (userType === 'walker') {
       await Notification.create({
         titulo: 'Servicio cancelado',
-        contenido: `El servicio para la fecha ${fecha} ha sido cancelado`,
+        contenido: `El servicio para la fecha ${fechaFormateada} ha sido cancelado`,
         userId: userId
       }, { transaction: t });
     } else if (userType === 'client') {
       await Notification.create({
         titulo: 'Servicio cancelado',
-        contenido: `El usuario ${nombreCliente} ha cancelado el servicio para la fecha ${fecha}`,
+        contenido: `El usuario ${nombreCliente} ha cancelado el servicio para la fecha ${fechaFormateada}`,
         userId: userId
       }, { transaction: t });
     } else { //si no viene lo que espero en walker, hago rollback
+      await t.rollback();
       res.status(500).json({
         ok: false,
         status: 500,
         message: 'Tipo de usuario no valido',
       });
-      t.rollback;
+      
     }
 
 
