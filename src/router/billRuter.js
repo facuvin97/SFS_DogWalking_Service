@@ -25,13 +25,14 @@ router.post('/bills/pay', async (req, res) => {
         currency_id: "UY"
       }],
       back_urls: {
-        success:"https://www.youtube.com/", 
-        failure:"https://www.youtube.com/", 
-        pending:"https://www.youtube.com/" 
+        success:"https://c609-2800-a4-1631-5b00-ec75-aeae-afbe-d76d.ngrok-free.app/success", 
+        failure:"https://c609-2800-a4-1631-5b00-ec75-aeae-afbe-d76d.ngrok-free.app/failure", 
+        pending:"https://c609-2800-a4-1631-5b00-ec75-aeae-afbe-d76d.ngrok-free.app/pending" 
       },
       auto_return: "approved"        
     }
     const preference = new Preference(client)
+
     const result = await preference.create({ body })
     res.json({
         id: result.id
@@ -43,6 +44,18 @@ router.post('/bills/pay', async (req, res) => {
     })
   }
 })
+
+router.get('/success', (req, res) => {
+  res.redirect('http://localhost:5173/success'); // URL del frontend
+});
+
+router.get('/failure', (req, res) => {
+  res.redirect('http://localhost:5173/failure'); // URL del frontend
+});
+
+router.get('/pending', (req, res) => {
+  res.redirect('http://localhost:5173/pending'); // URL del frontend
+});
 
 //Obtener los facturas de un cliente
 router.get("/bills/client/:client_id", async (req, res) => {
