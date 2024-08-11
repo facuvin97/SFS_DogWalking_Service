@@ -59,7 +59,7 @@ async function cleanupIndexes() {
 async function initDatabase() {
   try {
     await cleanupIndexes(); 
-    await sequelize.sync({ alter: false }); // Opción 'alter' para sincronización no destructiva
+    await sequelize.sync({ alter: true }); // Opción 'alter' para sincronización no destructiva
     console.log('¡Tablas sincronizadas!');
   } catch (error) {
     console.error('Error durante la inicialización:', error);
