@@ -6,7 +6,20 @@ class Walker extends User {}
 
 Walker.init({
   fotos: {
-    type: DataTypes.JSON  // O puedes usar type:  DataTypes.ARRAY(DataTypes.STRING) si solo necesitas almacenar las rutas de las imágenes
+    type: DataTypes.JSON,
+    allowNull: true 
+  }, 
+  efectivo: {
+    type: DataTypes.BOOLEAN,  
+    defaultValue: true
+  }, 
+  mercadopago: {
+    type: DataTypes.STRING,  
+    allowNull: true,
+  }, 
+  fecha_mercadopago: {
+    type: DataTypes.DATE,  
+    allowNull: true,
   }, 
 }, {
   sequelize,
