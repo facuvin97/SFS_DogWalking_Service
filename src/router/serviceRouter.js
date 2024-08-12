@@ -149,7 +149,7 @@ router.post('/service', async (req, res) => {
   sequelize.transaction(async (t) => {
     const serviceData = req.body;
 
-    console.log("\n\n\n\n\n\n\n\n\nfecha body: " , serviceData.fecha)
+  
     const fechaUTC = moment.tz(serviceData.fecha, 'America/Montevideo').utc().format();
 
 

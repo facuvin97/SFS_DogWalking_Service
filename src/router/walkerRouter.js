@@ -158,22 +158,21 @@ router.delete("/walkers/:walker_id", (req, res) => {
     res.status(500).send('Error al eliminar paseador');
     console.error('Error al eliminar paseador:', error);
   });
-
+})
   // asociar mercado pago
   router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
     try {
       const reqData = req.body
       const id = req.params.walker_id
+
+      console.log("\n\n\n\n\n\n\n\n\nBody mercadopago", reqData)
+
+      const walker = await Walker.findByPk(id)
     
       // modifica el paseador
-      const walker = await Walker.update({
-        mercadopago: reqData.code,
+      await walker.update({
+        mercadopago: reqData.mercadopago,
         fecha_mercadopago: new Date()
-      }, 
-      { 
-        where: {
-          id: id
-        }
       });
       res.status(200).json({
         ok: true,
@@ -188,37 +187,42 @@ router.delete("/walkers/:walker_id", (req, res) => {
 
   // modificar metodos de cobro
   router.put("/walkers/cobro/:walker_id", async (req, res) => {
+    const t = await sequelize.transaction();
+
     try {
       const reqData = req.body
       const id = req.params.walker_id
+      
+      const walker = await Walker.findByPk(id)
 
-      //si no tiene mercadopago ni efectivo, mando error
-      if (!mercadopago || mercadopago=='') {
-        if (!efectivo) {
-          res.status(500).send('Debe tener al menos un metodo de cobro disponible')
-        }
-      }
-    
+      
       // modifica el paseador
-      const walker = await Walker.update({
+      await walker.update({
         mercadopago: reqData.mercadopago,
         efectivo: reqData.efectivo
-      }, 
-      { 
-        where: {
-          id: id
+      }, {transaction: t});
+
+
+      //si no tiene mercadopago ni efectivo, mando error
+      if (!walker.mercadopago || walker.mercadopago=='') {
+        if (!walker.efectivo) {
+          await t.rollback()
+          return res.status(500).send('Debe tener al menos un metodo de cobro disponible')
         }
-      });
-      res.status(200).json({
+      }
+
+      await t.commit()
+
+      return res.status(200).json({
         ok: true,
         status: 200,
-        walker: walker,
+        message: "Metodo de cobro actualizado",
       });
     } catch(error) {
-      res.status(500).send('Error al modificar metodo de cobro');
+      await t.rollback()
       console.error('Error al modificar metodo de cobro:', error);
+      return res.status(500).send('Error al modificar metodo de cobro');
     };
   })
-})
 
 module.exports = router

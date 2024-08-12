@@ -1,4 +1,4 @@
-const sequelize = require('./db.js'); // tu configuración de sequelize
+/* const sequelize = require('./db.js'); // tu configuración de sequelize
 const models = sequelize.models;
 
 async function cleanupIndexes() {
@@ -52,7 +52,6 @@ async function initDatabase() {
     console.error('Error durante la inicialización:', error);
   }
 }
-
 initDatabase().then(() => {
   console.log('Índices limpiados y base de datos sincronizada.');
 }).catch(error => {
@@ -60,13 +59,13 @@ initDatabase().then(() => {
 });
 
 
-/* async function initDatabase() {
+ async function initDatabase() {
   try {
       await sequelize.sync();
       console.log('¡Tablas sincronizadas!');
   } catch (error) {
       console.error('Error al sincronizar tablas:', error);
   }
-} */
+}
 
-module.exports = initDatabase;
+module.exports = initDatabase; */
