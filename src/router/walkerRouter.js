@@ -3,6 +3,7 @@ const Walker = require("../models/Walker")
 const sequelize = require('../config/db.js');
 const Turn = require("../models/Turn.js");
 const router = require("express").Router()
+const { MercadoPagoConfig, OAuth } = require('mercadopago');
 
 // devuelve todo los walkers, incluyendo info de usuario y turno
 router.get("/walkers", async (req, res) => {
@@ -159,31 +160,52 @@ router.delete("/walkers/:walker_id", (req, res) => {
     console.error('Error al eliminar paseador:', error);
   });
 })
-  // asociar mercado pago
-  router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
-    try {
-      const reqData = req.body
-      const id = req.params.walker_id
 
-      console.log("\n\n\n\n\n\n\n\n\nBody mercadopago", reqData)
 
-      const walker = await Walker.findByPk(id)
+// asociar mercado pago
+router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
+  try {
+    const reqData = req.body
+    const id = req.params.walker_id
+    const walker = await Walker.findByPk(id)
+    const tokenCode = reqData.code
     
+    
+    const client = new MercadoPagoConfig({ accessToken: 'APP_USR-2635371829801721-081210-7db5843b60d97900a8b3bdbbf169a67d-1940982627', options: { timeout: 5000 } }); 
+
+    const oauth = new OAuth(client);
+
+    console.log('token code:', tokenCode)
+
+    oauth.create({ body:{
+      'client_secret':'Set797wVnLbC6T44H0wO39Rd4iYHTuUg',
+      'client_id':'2635371829801721',
+      'code':tokenCode,
+      'redirect_uri':'https://strong-llamas-own.loca.lt/success-association'
+    }
+    }).then(async (result) => {
       // modifica el paseador
       await walker.update({
-        mercadopago: reqData.mercadopago,
-        fecha_mercadopago: new Date()
+        mercadopago: true,
+        fecha_mercadopago: new Date(),
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+        public_key: result.public_key,
       });
+
       res.status(200).json({
         ok: true,
         status: 200,
-        token: walker.mercadopago,
+        token: result.access_token,
       });
-    } catch(error) {
-      res.status(500).send('Error al modificar mercadopago');
-      console.error('Error al modificar mercadopago:', error);
-    };
-  })
+    }).catch((error) => console.log(error));
+
+
+  } catch(error) {
+    res.status(500).send('Error al asociar mercadopago');
+    console.error('Error al asociar mercadopago:', error);
+  };
+})
 
   // modificar metodos de cobro
   router.put("/walkers/cobro/:walker_id", async (req, res) => {
@@ -204,11 +226,9 @@ router.delete("/walkers/:walker_id", (req, res) => {
 
 
       //si no tiene mercadopago ni efectivo, mando error
-      if (!walker.mercadopago || walker.mercadopago=='') {
-        if (!walker.efectivo) {
-          await t.rollback()
-          return res.status(500).send('Debe tener al menos un metodo de cobro disponible')
-        }
+      if (!walker.mercadopago && !walker.efectivo) {
+        await t.rollback()
+        return res.status(500).send('Debe tener al menos un metodo de cobro disponible')
       }
 
       await t.commit()

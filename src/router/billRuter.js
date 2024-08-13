@@ -12,7 +12,7 @@ const { format } = require('date-fns');
 const { MercadoPagoConfig, Preference } = require("mercadopago")
 
 const client = new MercadoPagoConfig({
-  accessToken:"APP_USR-8409884849533418-072221-ba5e6171659a38ab92e77c9c92891eac-1914450028"
+  accessToken:"APP_USR-2635371829801721-081221-b15a1454e498fe6ac4564b9c780f7dc3-1914450028"//acces touken paseador
 })
 
 router.post('/bills/pay', async (req, res) => {
@@ -25,9 +25,9 @@ router.post('/bills/pay', async (req, res) => {
         currency_id: "UY"
       }],
       back_urls: {
-        success:"https://c609-2800-a4-1631-5b00-ec75-aeae-afbe-d76d.ngrok-free.app/success", 
-        failure:"https://c609-2800-a4-1631-5b00-ec75-aeae-afbe-d76d.ngrok-free.app/failure", 
-        pending:"https://c609-2800-a4-1631-5b00-ec75-aeae-afbe-d76d.ngrok-free.app/pending" 
+        success:"https://www.youtube.com", 
+        failure:"https://www.youtube.com", 
+        pending:"https://www.youtube.com" 
       },
       auto_return: "approved"        
     }

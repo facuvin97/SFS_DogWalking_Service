@@ -14,6 +14,18 @@ Walker.init({
     defaultValue: true
   }, 
   mercadopago: {
+    type: DataTypes.BOOLEAN,  
+    defaultValue: false,
+  }, 
+  access_token: {
+    type: DataTypes.STRING,  
+    allowNull: true,
+  }, 
+  refresh_token: {
+    type: DataTypes.STRING,  
+    allowNull: true,
+  }, 
+  public_key: {
     type: DataTypes.STRING,  
     allowNull: true,
   }, 
