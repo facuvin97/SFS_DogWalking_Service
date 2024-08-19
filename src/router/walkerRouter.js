@@ -2,8 +2,11 @@ const User = require("../models/User")
 const Walker = require("../models/Walker")
 const sequelize = require('../config/db.js');
 const Turn = require("../models/Turn.js");
+const Bill = require("../models/Bill.js");
+const Service = require("../models/Service.js");
 const router = require("express").Router()
 const { MercadoPagoConfig, OAuth } = require('mercadopago');
+const globalConstants = require("../const/globalConstants")
 
 // devuelve todo los walkers, incluyendo info de usuario y turno
 router.get("/walkers", async (req, res) => {
@@ -171,17 +174,15 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
     const tokenCode = reqData.code
     
     
-    const client = new MercadoPagoConfig({ accessToken: 'APP_USR-2635371829801721-081210-7db5843b60d97900a8b3bdbbf169a67d-1940982627', options: { timeout: 5000 } }); 
+    const client = new MercadoPagoConfig({ accessToken: globalConstants.ACCESS_TOKEN, options: { timeout: 5000 } }); 
 
     const oauth = new OAuth(client);
 
-    console.log('token code:', tokenCode)
-
     oauth.create({ body:{
-      'client_secret':'Set797wVnLbC6T44H0wO39Rd4iYHTuUg',
-      'client_id':'2635371829801721',
+      'client_secret':globalConstants.CLIENT_SECRET,
+      'client_id': globalConstants.CLIENT_ID,
       'code':tokenCode,
-      'redirect_uri':'https://strong-llamas-own.loca.lt/success-association'
+      'redirect_uri':globalConstants.REDIRECT_URI
     }
     }).then(async (result) => {
       // modifica el paseador
@@ -243,6 +244,42 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
       console.error('Error al modificar metodo de cobro:', error);
       return res.status(500).send('Error al modificar metodo de cobro');
     };
+  })
+
+
+  // obtener walker por el id de la factura
+  router.get("/walkers/byBill/:billId", async (req, res) => {    
+    const id = req.params.billId;
+    // Obtener la factura por su ID
+    const bill = await Bill.findByPk(id, {
+      include: {
+        model: Service, // Incluir el modelo Service
+        include: {
+          model: Turn, // Incluir el modelo Turn dentro de Service
+          include: {
+            model: Walker // Incluir el modelo Walker dentro de Turn
+          }
+        }
+      }
+    })
+
+    //verificacion
+    if (bill === null) {
+      res.status(400).json({
+        ok: false,
+        status: 400,
+        message: 'No existe la factura con el id indicado'
+      })
+    }
+
+    const walker = bill.Service.Turn.Walker
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      message: "ok",
+      body: bill.Service.Turn.Walker.mercadopago
+    })
   })
 
 module.exports = router

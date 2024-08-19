@@ -11,39 +11,82 @@ const router = require("express").Router()
 const { format } = require('date-fns');
 const { MercadoPagoConfig, Preference } = require("mercadopago")
 
-const client = new MercadoPagoConfig({
-  accessToken:"APP_USR-2635371829801721-081221-b15a1454e498fe6ac4564b9c780f7dc3-1914450028"//acces touken paseador
-})
 
+
+// Endpoint para crear una preferencia de pago
 router.post('/bills/pay', async (req, res) => {
-  try{
-    const body ={
-      items: [{
-        title: req.body.title,
-        quantity: Number(req.body.quantity),
-        unit_price: Number(req.body.price),
-        currency_id: "UY"
-      }],
-      back_urls: {
-        success:"https://www.youtube.com", 
-        failure:"https://www.youtube.com", 
-        pending:"https://www.youtube.com" 
-      },
-      auto_return: "approved"        
-    }
-    const preference = new Preference(client)
+  try {
+    const { billId } = req.body; // ID de la factura
+    // Obtener la factura por su ID
+    const bill = await Bill.findByPk(billId, {
+      include: {
+        model: Service, // Incluir el modelo Service
+        include: {
+          model: Turn, // Incluir el modelo Turn dentro de Service
+          include: {
+            model: Walker // Incluir el modelo Walker dentro de Turn
+          }
+        }
+      }
+    });
 
-    const result = await preference.create({ body })
+    if (!bill) {
+      return res.status(404).json({
+        ok: false,
+        status: 404,
+        message: "Factura no encontrada"
+      });
+    }
+    
+    const monto = parseFloat(bill.monto);
+
+    if (isNaN(monto)) {
+      return res.status(400).json({
+        ok: false,
+        status: 400,
+        message: "El monto de la factura no es un número válido"
+      });
+    }
+
+    const walker = bill.Service.Turn.Walker;
+    // Inicializar MercadoPagoConfig con el access token del paseador
+    const client = new MercadoPagoConfig({
+      accessToken: walker.access_token // Access token del paseador
+    });
+
+    const body = {
+      items: [
+        {
+          title: `Servicio Nº: ${bill.ServiceId}`, // Título del servicio
+          quantity: 1,
+          unit_price: monto, // Monto de la factura
+          currency_id: "UY" // Moneda (Uruguay)
+        }
+      ],
+      back_urls: {
+        success: "https://eleven-worlds-camp.loca.lt/success-payment",
+        failure: "https://eleven-worlds-camp.loca.lt/failure",
+        pending: "https://eleven-worlds-camp.loca.lt/pending"
+      },
+      auto_return: "approved"
+    };
+
+    // Crear la preferencia de pago en MercadoPago
+    const preference = new Preference(client);
+    const result = await preference.create({ body });
+
+    // Devolver el ID de la preferencia creada y la public key para usar en el frontend
     res.json({
-        id: result.id
-    })
+      id: result.id, // ID de la preferencia
+      publicKey: walker.public_key // Public key del paseador
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({
-      error:" Error el crear la preferencia :( "
-    })
+      error: "Error al crear la preferencia :("
+    });
   }
-})
+});
 
 router.get('/success', (req, res) => {
   res.redirect('http://localhost:5173/success'); // URL del frontend
@@ -98,7 +141,7 @@ router.put("/bills/:bill_id", async (req, res) => {
     try {
       const id = req.params.bill_id;
   
-      // Verificar si el turno existe
+      // Verificar si la factura existe
       const existingBill = await Bill.findOne({ where: { id: id }, transaction: t });
   
       // Si la factura no existe
@@ -152,7 +195,7 @@ router.put("/bills/:bill_id", async (req, res) => {
       return res.status(200).json({
         ok: true,
         status: 200,
-        message: "Factura pagada exitosamente"
+        message: "Factura pagada exitosamente",
       });
     } catch (error) {
       await t.rollback();
