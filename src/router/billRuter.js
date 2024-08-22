@@ -9,7 +9,8 @@ const Client = require('../models/Client.js');
 const User = require('../models/User.js');
 const router = require("express").Router()
 const { format } = require('date-fns');
-const { MercadoPagoConfig, Preference } = require("mercadopago")
+const { MercadoPagoConfig, Preference } = require("mercadopago");
+const globalConstants = require('../const/globalConstants.js');
 
 
 
@@ -64,9 +65,9 @@ router.post('/bills/pay', async (req, res) => {
         }
       ],
       back_urls: {
-        success: "https://eleven-worlds-camp.loca.lt/success-payment",
-        failure: "https://eleven-worlds-camp.loca.lt/failure",
-        pending: "https://eleven-worlds-camp.loca.lt/pending"
+        success: `${globalConstants.EXTERNAL_URI}/success-payment`,
+        failure: `${globalConstants.EXTERNAL_URI}/failure`,
+        pending: `${globalConstants.EXTERNAL_URI}/pending`
       },
       auto_return: "approved"
     };
@@ -139,6 +140,9 @@ router.put("/bills/:bill_id", async (req, res) => {
     const t = await sequelize.transaction();
   
     try {
+      const reqData = req.body;
+      const {pagado, pendiente} = reqData
+      
       const id = req.params.bill_id;
   
       // Verificar si la factura existe
@@ -164,11 +168,28 @@ router.put("/bills/:bill_id", async (req, res) => {
           message: "La factura ya está pagada"
         });
       }
+      if (pagado && pendiente) {
+        await t.rollback();
+        return res.status(400).json({
+          ok: false,
+          status: 400,
+          message: "La factura no puede ser pagada y pendiente a la vez"
+        });
+      }
+      if (!pagado && !pendiente) {
+        await t.rollback();
+        return res.status(400).json({
+          ok: false,
+          status: 400,
+          message: "No se realizo ninguna acciòn"
+        });
+      }
   
       // Actualiza la Factura
       await Bill.update(
         {
-          pagado: true
+          pagado: pagado,
+          pendiente: pendiente
         },
         {
           where: { id: id }, transaction: t
@@ -182,14 +203,14 @@ router.put("/bills/:bill_id", async (req, res) => {
       const turn = await Turn.findByPk(service.TurnId, { transaction: t });
   
       const fechaFormateada = format(service.fecha, 'dd/MM/yyyy');
-  
+      console.log('antes if !pendiente:', pendiente, pagado)
       // Enviar una notificación al paseador
-      await Notification.create({
+      if(!pendiente && pagado){
+        await Notification.create({
         titulo: 'Factura pagada',
         contenido: `Su servicio del día ${fechaFormateada}, con el cliente ${service.Client.User.nombre_usuario} ha sido pagado`,
         userId: turn.WalkerId
       }, { transaction: t });
-  
       await t.commit();
   
       return res.status(200).json({
@@ -197,6 +218,24 @@ router.put("/bills/:bill_id", async (req, res) => {
         status: 200,
         message: "Factura pagada exitosamente",
       });
+    }
+
+      if(pendiente && !pagado){
+        await Notification.create({
+        titulo: 'Factura pendiente',
+        contenido: `Su servicio del día ${fechaFormateada}, con el cliente ${service.Client.User.nombre_usuario} esta pendiente de pago.`,
+        userId: turn.WalkerId
+      }, { transaction: t });
+      await t.commit();
+  
+      return res.status(200).json({
+        ok: true,
+        status: 200,
+        message: "La factura tiene un el pago pendiente",
+      });
+    }
+  
+
     } catch (error) {
       await t.rollback();
       console.error('Error al pagar factura:', error);

@@ -34,35 +34,39 @@ const router = require("express").Router()
   // modificar metodos de cobro
   router.put("/payments/manage/:walker_id", async (req, res) => {
     try {
-      const reqData = req.body
-      const id = req.params.walker_id
-
-      //si no tiene mercadopago ni efectivo, mando error
-      if (!mercadopago || mercadopago=='') {
-        if (!efectivo) {
-          res.status(500).send('Debe tener al menos un metodo de cobro disponible')
-        }
+      const reqData = req.body;
+      const id = req.params.walker_id;
+  
+      const { mercadopago, efectivo } = reqData;
+  
+      // Verifica si al menos un método de cobro está habilitado
+      if (!mercadopago && !efectivo) {
+        return res.status(400).send('Debe tener al menos un método de cobro disponible');
       }
-    
-      // modifica el paseador
-      const walker = await Walker.update({
-        mercadopago: reqData.mercadopago,
-        efectivo: reqData.efectivo
-      }, 
-      { 
-        where: {
-          id: id
+  
+      // Modifica el paseador
+      const walker = await Walker.update(
+        {
+          mercadopago: mercadopago,
+          efectivo: efectivo,
+        },
+        {
+          where: {
+            id: id,
+          },
         }
-      });
+      );
+  
       res.status(200).json({
         ok: true,
         status: 200,
-        message: "Metodo de cobro actualizado",
+        message: "Método de cobro actualizado",
       });
-    } catch(error) {
-      res.status(500).send('Error al modificar metodo de cobro');
-      console.error('Error al modificar metodo de cobro:', error);
-    };
-  })
+    } catch (error) {
+      res.status(500).send('Error al modificar método de cobro');
+      console.error('Error al modificar método de cobro:', error);
+    }
+  });
+  
 
 module.exports = router

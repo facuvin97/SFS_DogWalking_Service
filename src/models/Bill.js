@@ -27,6 +27,10 @@ Bill.init({
   pagado: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  pendiente: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   sequelize,

@@ -11,6 +11,7 @@ const routerNotification = require("../router/notificationRouter")
 const routerPet = require("../router/petRouter")
 const routerReview = require("../router/reviewRouter")
 const routerBill = require("../router/billRuter")
+const routerPayment = require("../router/paymentRouter")
 
 const app = express();
 
@@ -53,5 +54,6 @@ app.use(version, routerNotification);
 app.use(version, routerPet)
 app.use(version, routerReview)
 app.use(version, routerBill)
+app.use(version, routerPayment)
 
 module.exports = app
