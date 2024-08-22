@@ -7,10 +7,12 @@ const router = require("express").Router()
 //Obtener los turnos de un paseador
 router.get("/turns/walker/:walker_id", async (req, res) => {
   const walkerId = req.params.walker_id;
-  const turns = await Turn.findAll({
+  const turns = await Turn.findAll({    
     where: {
       WalkerId: walkerId
-    }
+    },
+    include: Servicio
+    
   })
   res.status(200).json({
     ok: true,
