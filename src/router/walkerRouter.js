@@ -181,10 +181,9 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
 
     // Formatear la fecha a 'yyyy-MM-dd HH:mm'
     const formattedFechaHoraActual = fechaHoraActual.toISOString()
-      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
-      .replace('T', ' '); // Cambia 'T' por un espacio
+      .slice(0, 10) // 'yyyy-MM-dd'
     
-    
+  
     const client = new MercadoPagoConfig({ accessToken: globalConstants.ACCESS_TOKEN, options: { timeout: 5000 } }); 
 
     const oauth = new OAuth(client);

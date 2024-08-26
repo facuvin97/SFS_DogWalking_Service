@@ -10,13 +10,21 @@ const router = require("express").Router()
 // Crear notificacion
 router.post("/notifications", async (req, res) => {
   try {
-    console.log('Entro al post')
     const notificationData = req.body;
+      // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+  
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
 
     const notification = await Notification.create({
       titulo: notificationData.titulo,
       contenido: notificationData.contenido,
-      fechaHora: notificationData.fechaHora,
+      fechaHora: formattedFechaHoraActual,
       leido: notificationData.leido,
       userId: notificationData.userId
     });

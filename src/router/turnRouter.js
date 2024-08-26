@@ -22,7 +22,7 @@ router.get("/turns/walker/:walker_id", async (req, res) => {
 })
 
 //Obtener un turno por su id
-router.get("/turn/:turn_id", async (req, res) => {
+router.get("/turns/:turn_id", async (req, res) => {
   const id = req.params.turn_id;
   const turn = await Turn.findOne({
     where: {
@@ -37,7 +37,7 @@ router.get("/turn/:turn_id", async (req, res) => {
 })
 
 //Agregar un turno
-router.post("/turn", async (req, res) => {
+router.post("/turns", async (req, res) => {
   try {
     const turnData = req.body;
 
@@ -64,7 +64,7 @@ router.post("/turn", async (req, res) => {
 });
 
 //Modificar un turno
-router.put("/turn/:turn_id", async (req, res) => {
+router.put("/turns/:turn_id", async (req, res) => {
   try {
     const id = req.params.turn_id
     const turnData = req.body
@@ -108,7 +108,7 @@ router.put("/turn/:turn_id", async (req, res) => {
 })
 
 
-router.delete("/turn/:turn_id", async (req, res) => {
+router.delete("/turns/:turn_id", async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.turn_id;
 

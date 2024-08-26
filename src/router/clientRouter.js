@@ -27,7 +27,7 @@ router.get("/clients/:client_id", async (req, res) => {
   res.status(200).json({
     ok: true,
     status: 200,
-    body: client
+    data: client
   })
 })
 

@@ -112,7 +112,7 @@ router.get('/services/walker/:walker_id', async (req, res) => {
 });
 
 // Obtener un servicio por su id
-router.get('/service/:service_id', async (req, res) => {
+router.get('/services/:service_id', async (req, res) => {
   const id = req.params.service_id;
   try {
     const service = await Service.findOne({
@@ -145,7 +145,7 @@ router.get('/service/:service_id', async (req, res) => {
 });
 
 // Agregar un servicio
-router.post('/service', async (req, res) => {
+router.post('/services', async (req, res) => {
   sequelize.transaction(async (t) => {
     const serviceData = req.body;
 
@@ -205,7 +205,7 @@ router.post('/service', async (req, res) => {
 });
 
 // Modificar un servicio (solo se usa para cambiar el valor de aceptado, cuando el paseador acepta la solicitud)
-router.put('/service/:service_id', async (req, res) => {
+router.put('/services/:service_id', async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.service_id;
     const serviceData = req.body;
@@ -293,7 +293,7 @@ router.put('/service/:service_id', async (req, res) => {
 });
 
 // Eliminar un servicio
-router.delete('/service/:service_id', async (req, res) => {
+router.delete('/services/:service_id', async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.service_id;
 
