@@ -172,6 +172,17 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
     const id = req.params.walker_id
     const walker = await Walker.findByPk(id)
     const tokenCode = reqData.code
+
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
+
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
     
     
     const client = new MercadoPagoConfig({ accessToken: globalConstants.ACCESS_TOKEN, options: { timeout: 5000 } }); 
@@ -188,7 +199,7 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
       // modifica el paseador
       await walker.update({
         mercadopago: true,
-        fecha_mercadopago: new Date(),
+        fecha_mercadopago: formattedFechaHoraActual,
         access_token: result.access_token,
         refresh_token: result.refresh_token,
         public_key: result.public_key,

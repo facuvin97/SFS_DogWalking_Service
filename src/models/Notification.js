@@ -13,9 +13,15 @@ Notification.init({
     allowNull: false,
   },
   fechaHora: {
-    type: DataTypes.DATE, // Utilizamos DataTypes.DATE para representar DATETIME
-    defaultValue: DataTypes.NOW,
+    type: DataTypes.STRING, // Utilizamos DataTypes.DATE para representar DATETIME
     allowNull: false,
+    validate: {
+      isDateTimeFormat(value) {
+        if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value)) {
+          throw new Error('La fecha y hora deben tener el formato yyyy-MM-dd HH:mm');
+        }
+      }
+    }
   },
   leido: {
     type: DataTypes.BOOLEAN,

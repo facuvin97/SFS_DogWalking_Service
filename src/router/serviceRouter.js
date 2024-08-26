@@ -149,13 +149,20 @@ router.post('/service', async (req, res) => {
   sequelize.transaction(async (t) => {
     const serviceData = req.body;
 
-  
-    const fechaUTC = moment.tz(serviceData.fecha, 'America/Montevideo').utc().format();
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
 
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
 
     // Crea el servicio
     const service = await Service.create({
-      fecha: fechaUTC,
+      fecha: serviceData.fecha,
       direccionPickUp: serviceData.direccionPickUp,
       cantidad_mascotas: serviceData.cantidad_mascotas,
       nota: serviceData.nota,
@@ -164,7 +171,7 @@ router.post('/service', async (req, res) => {
     }, {transaction: t});
     //traigo los datos del cliente, para mostrar en la notificacion
     const client = await User.findByPk(serviceData.ClientId, {transaction: t})
-    console.log("\n\n\n\n\n\n\n\n\nfecha servicio: " , service.fecha)
+    // console.log("\n\n\n\n\n\n\n\n\nfecha servicio: " , service.fecha)
 
 
     //traigo el turno para tener el id del walker
@@ -174,6 +181,7 @@ router.post('/service', async (req, res) => {
     await Notification.create({
       titulo: 'Nueva solicitud de servicio',
       contenido: `El cliente ${client.nombre_usuario} ha solicitado un servicio para el dia ${serviceData.fecha}`,
+      fechaHora: formattedFechaHoraActual,
       userId: turn.WalkerId
     }, { transaction: t });
 
@@ -193,7 +201,7 @@ router.post('/service', async (req, res) => {
     console.error('Error al crear servicio:', error);
   })
 
-  console.log('\n\n\nfecha despues de transeccion', res)
+  // console.log('\n\n\nfecha despues de transeccion', res)
 });
 
 // Modificar un servicio (solo se usa para cambiar el valor de aceptado, cuando el paseador acepta la solicitud)
@@ -247,11 +255,23 @@ router.put('/service/:service_id', async (req, res) => {
     }, {transaction: t});
     console.log("\n\n\nfectura today despues de creada: " ,bill.fecha)
 
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
+
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
+
     // envio una notificacion al cliente
     await Notification.create({
       titulo: 'Solicitud de servicio aceptada',
       contenido: `Su servicio para el dia ${serviceData.fecha} ha sido confirmado`,
-      userId: serviceData.ClientId
+      userId: serviceData.ClientId,
+      fechaHora: formattedFechaHoraActual
     }, { transaction: t });
 
     res.status(200).json({
@@ -308,17 +328,30 @@ router.delete('/service/:service_id', async (req, res) => {
       });
     }
 
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
+
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
+
     if (userType === 'walker') {
       await Notification.create({
         titulo: 'Servicio cancelado',
         contenido: `El servicio para la fecha ${fechaFormateada} ha sido cancelado`,
-        userId: userId
+        userId: userId,
+        fechaHora: formattedFechaHoraActual
       }, { transaction: t });
     } else if (userType === 'client') {
       await Notification.create({
         titulo: 'Servicio cancelado',
         contenido: `El usuario ${nombreCliente} ha cancelado el servicio para la fecha ${fechaFormateada}`,
-        userId: userId
+        userId: userId,
+        fechaHora: formattedFechaHoraActual
       }, { transaction: t });
     } else { //si no viene lo que espero en walker, hago rollback
       await t.rollback();

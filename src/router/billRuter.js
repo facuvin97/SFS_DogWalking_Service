@@ -201,15 +201,25 @@ router.put("/bills/:bill_id", async (req, res) => {
         transaction: t
       });
       const turn = await Turn.findByPk(service.TurnId, { transaction: t });
-  
-      const fechaFormateada = format(service.fecha, 'dd/MM/yyyy');
-      console.log('antes if !pendiente:', pendiente, pagado)
+
+      // Obtener la fecha y hora actual
+      const fechaHoraActual = new Date();
+
+      // Restar 3 horas
+      fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+      // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+      const formattedFechaHoraActual = fechaHoraActual.toISOString()
+        .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+        .replace('T', ' '); // Cambia 'T' por un espacio
+
       // Enviar una notificación al paseador
       if(!pendiente && pagado){
         await Notification.create({
         titulo: 'Factura pagada',
-        contenido: `Su servicio del día ${fechaFormateada}, con el cliente ${service.Client.User.nombre_usuario} ha sido pagado`,
-        userId: turn.WalkerId
+        contenido: `Su servicio del día ${service.fecha}, con el cliente ${service.Client.User.nombre_usuario} ha sido pagado`,
+        userId: turn.WalkerId,
+        fechaHora: formattedFechaHoraActual
       }, { transaction: t });
       await t.commit();
   
@@ -223,7 +233,7 @@ router.put("/bills/:bill_id", async (req, res) => {
       if(pendiente && !pagado){
         await Notification.create({
         titulo: 'Factura pendiente',
-        contenido: `Su servicio del día ${fechaFormateada}, con el cliente ${service.Client.User.nombre_usuario} esta pendiente de pago.`,
+        contenido: `Su servicio del día ${service.fecha}, con el cliente ${service.Client.User.nombre_usuario} esta pendiente de pago.`,
         userId: turn.WalkerId
       }, { transaction: t });
       await t.commit();

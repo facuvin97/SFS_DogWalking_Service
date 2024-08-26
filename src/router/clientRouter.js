@@ -56,6 +56,7 @@ router.post("/clients", async (req, res) => {
       ok: true,
       status: 201,
       message: "Cliente creado exitosamente",
+      body: client.id
     });
     
   }).catch((error) => {

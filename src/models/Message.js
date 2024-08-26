@@ -7,7 +7,15 @@ class Message extends Model {}
 
 Message.init({
   fechaHora: {
-    type: DataTypes.DATE // Utilizamos DataTypes.DATE para representar DATETIME
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isDateTimeFormat(value) {
+        if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value)) {
+          throw new Error('La fecha y hora deben tener el formato yyyy-MM-dd HH:mm');
+        }
+      }
+    }
   },
   contenido: {
     type: DataTypes.TEXT

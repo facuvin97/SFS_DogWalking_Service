@@ -58,20 +58,12 @@ User.init({
     }
   },
   fecha_nacimiento: {
-    type: DataTypes.DATE,
+    type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isDate: {
-        msg: 'El campo "fecha_nacimiento" debe ser una fecha válida'
-      },
-      notEmpty: {
-        msg: 'El campo "fecha_nacimiento" no puede estar vacío'
-      },
-      isOldEnough(value) {
-        const currentDate = moment();
-        const birthDate = moment(value);
-        if (currentDate.diff(birthDate, 'years') < 15) {
-          throw new Error('El usuario debe tener al menos 15 años');
+      isDateFormat(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          throw new Error('La fecha debe tener el formato yyyy-MM-dd');
         }
       }
     }

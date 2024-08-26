@@ -6,14 +6,13 @@ class Service extends Model {}
 Service.init(
   {
     fecha: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isDate: {
-          msg: 'El campo "fecha" debe ser una fecha válida'
-        },
-        notEmpty: {
-          msg: 'El campo "fecha" no puede estar vacío'
+        isDateFormat(value) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            throw new Error('La fecha debe tener el formato yyyy-MM-dd');
+          }
         }
       }
     },

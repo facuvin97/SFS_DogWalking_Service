@@ -40,14 +40,21 @@ router.get('/notifications/:userId', async (req, res) => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30));
 
-    const notifications = await Notification.findAll({ 
-      where: { 
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedThirtyDaysAgo = thirtyDaysAgo.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
+
+    // filtrar la notificaciones recibidas en los ultimos 30 dias
+    const notifications = await Notification.findAll({
+      where: {
         userId: req.params.userId,
         fechaHora: {
-          [Op.gte]: thirtyDaysAgo // Obtener notificaciones de hace 30 días como máximo
+          [Op.gte]: formattedThirtyDaysAgo 
         }
-      } 
+      }
     });
+    
     res.status(200).json(notifications);
   } catch (error) {
     res.status(400).json({ error: error.message });

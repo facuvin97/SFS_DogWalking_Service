@@ -137,7 +137,16 @@ router.delete("/turn/:turn_id", async (req, res) => {
       transaction: t
     });
 
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
 
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
 
     // Enviar notificaciones
     if (servicios.length > 0) {
@@ -145,7 +154,8 @@ router.delete("/turn/:turn_id", async (req, res) => {
         await Notification.create({
           titulo: 'Servicio cancelado',
           contenido: `El servicio para la fecha ${servicio.fecha} ha sido cancelado`,
-          userId: servicio.ClientId
+          userId: servicio.ClientId,
+          fechaHora: formattedFechaHoraActual
         }, { transaction: t });
       }
     }
