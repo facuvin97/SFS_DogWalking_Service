@@ -13,7 +13,6 @@ const moment = require('moment-timezone');
 const { format } = require('date-fns');
 
 
-
 // Obtener todos los servicios de un cliente
 router.get('/services/client/:client_id', async (req, res) => {
   const clientId = req.params.client_id;
@@ -47,6 +46,44 @@ router.get('/services/turn/:turn_id', async (req, res) => {
     const services = await Service.findAll({
       where: {
         TurnId: turnId
+      }
+    });
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      body: services
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al obtener los servicios',
+      error: error.message
+    });
+    console.error('Error al obtener los servicios:', error);
+  }
+});
+
+//obtener todos los servicios de un turno para el dia actual
+router.get('/services/turn/today/:turn_id', async (req, res) => {
+  const turnId = req.params.turn_id;
+
+  // Obtener la fecha y hora actual
+  const fechaHoraActual = new Date();
+
+  // Restar 3 horas
+  fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+  // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+  const formattedFechaActual = fechaHoraActual.toISOString()
+  .slice(0, 10) // 'yyyy-MM-dd'
+
+  try {
+    const services = await Service.findAll({
+      where: {
+        TurnId: turnId,
+        fecha: formattedFechaActual,
+        aceptado: true
       }
     });
     res.status(200).json({
@@ -160,6 +197,10 @@ router.post('/services', async (req, res) => {
       .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
       .replace('T', ' '); // Cambia 'T' por un espacio
 
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaActual = fechaHoraActual.toISOString()
+    .slice(0, 10) // 'yyyy-MM-dd'
+
     // Crea el servicio
     const service = await Service.create({
       fecha: serviceData.fecha,
@@ -208,7 +249,21 @@ router.post('/services', async (req, res) => {
 router.put('/services/:service_id', async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.service_id;
-    const serviceData = req.body;
+
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
+
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaActual = fechaHoraActual.toISOString()
+    .slice(0, 10) // 'yyyy-MM-dd'
 
     // Verificar si el servicio existe
     const existingService = await Service.findOne({ where: { id: id }, transaction: t });
@@ -224,13 +279,7 @@ router.put('/services/:service_id', async (req, res) => {
     // Actualiza el servicio
     await Service.update(
       {
-        fecha: serviceData.fecha,
-        direccionPickUp: serviceData.direccionPickUp,
-        cantidad_mascotas: serviceData.cantidad_mascotas,
-        nota: serviceData.nota,
-        aceptado: serviceData.aceptado,
-        TurnId: serviceData.TurnId, // Asigna el ID del Turno al servicio
-        ClientId: serviceData.ClientId // Asigna el ID del Cliente al servicio
+        aceptado: true,
       },
       {
         where: { id: id }, transaction: t
@@ -240,37 +289,25 @@ router.put('/services/:service_id', async (req, res) => {
     //traigo el turno para tener el id del walker
     const turn = await Turn.findByPk(existingService.TurnId, {transaction: t})
     const today = moment().tz('America/Montevideo') // Reemplaza 'America/Bogota' con la zona horaria de tu país
-    //const fechaHora = now.format('YYYY-MM-DD HH:mm:ss');
-    //const fecha = new Date().toISOString();
-    //const today = fecha;
-    //console.log("\n\n\nfecha: " ,fechaHora)
 
-    //TODO:
+
+
+
     
-    console.log("\n\n\nfectura today: " ,today)
     const bill = await Bill.create({ 
-      fecha: today,     
+      fecha: formattedFechaActual,     
       monto: existingService.cantidad_mascotas * turn.tarifa,
       ServiceId: existingService.id,     
     }, {transaction: t});
     console.log("\n\n\nfectura today despues de creada: " ,bill.fecha)
 
-    // Obtener la fecha y hora actual
-    const fechaHoraActual = new Date();
 
-    // Restar 3 horas
-    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
-
-    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
-    const formattedFechaHoraActual = fechaHoraActual.toISOString()
-      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
-      .replace('T', ' '); // Cambia 'T' por un espacio
 
     // envio una notificacion al cliente
     await Notification.create({
       titulo: 'Solicitud de servicio aceptada',
-      contenido: `Su servicio para el dia ${serviceData.fecha} ha sido confirmado`,
-      userId: serviceData.ClientId,
+      contenido: `Su servicio para el dia ${existingService.fecha} ha sido confirmado`,
+      userId: existingService.ClientId,
       fechaHora: formattedFechaHoraActual
     }, { transaction: t });
 
@@ -296,6 +333,21 @@ router.put('/services/:service_id', async (req, res) => {
 router.delete('/services/:service_id', async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.service_id;
+
+    // Obtener la fecha y hora actual
+    const fechaHoraActual = new Date();
+
+    // Restar 3 horas
+    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaHoraActual = fechaHoraActual.toISOString()
+      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+      .replace('T', ' '); // Cambia 'T' por un espacio
+
+    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+    const formattedFechaActual = fechaHoraActual.toISOString()
+    .slice(0, 10) // 'yyyy-MM-dd'
 
     // Aca tenemos que diferenciar que tipo de usuario esta eliminando el servicio, para ver a quien le mandamos la notificacion
     const userType = req.body.execUserType;
@@ -327,17 +379,6 @@ router.delete('/services/:service_id', async (req, res) => {
         message: 'Servicio no encontrado'
       });
     }
-
-    // Obtener la fecha y hora actual
-    const fechaHoraActual = new Date();
-
-    // Restar 3 horas
-    fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
-
-    // Formatear la fecha a 'yyyy-MM-dd HH:mm'
-    const formattedFechaHoraActual = fechaHoraActual.toISOString()
-      .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
-      .replace('T', ' '); // Cambia 'T' por un espacio
 
     if (userType === 'walker') {
       await Notification.create({
@@ -373,6 +414,114 @@ router.delete('/services/:service_id', async (req, res) => {
       error: error.message
     });
     console.error('Error al eliminar servicio:', error);
+  })
+  
+});
+
+// Marcar servicio como comenzado
+router.put('/services/started/:service_id', async (req, res) => {
+  sequelize.transaction(async (t) => {
+    const id = req.params.service_id;
+
+    // Verificar si el servicio existe
+    const existingService = await Service.findOne({ where: { id: id }, transaction: t });
+
+    if (!existingService) {
+      return res.status(404).json({
+        ok: false,
+        status: 404,
+        message: 'Servicio no encontrado'
+      });
+    }
+
+    // Actualiza el servicio
+    await Service.update(
+      {
+        comenzado: true,
+      },
+      {
+        where: { id: id }, transaction: t
+      },
+    );
+
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      message: `El servicio con id ${id} ha comenzado`
+    });
+  }).catch ((error) => {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al iniciar el servicio',
+      error: error.message
+    });
+    console.error('Error al iniciar el servicio:', error);
+  })
+});
+
+// Marcar servicio como finalizado
+router.put('/services/finished/:service_id', async (req, res) => {
+  sequelize.transaction(async (t) => {
+    const id = req.params.service_id;
+
+    // Verificar si el servicio existe
+    const existingService = await Service.findOne({ where: { id: id }, transaction: t });
+
+    if (!existingService) {
+      return res.status(404).json({
+        ok: false,
+        status: 404,
+        message: 'Servicio no encontrado'
+      });
+    }
+
+    // Actualiza el servicio
+    await Service.update(
+      {
+        finalizado: true,
+      },
+      {
+        where: { id: id }, transaction: t
+      },
+    );
+
+    //traigo la factura asociada al servicio
+    const bill = await Bill.findOne({ where: { ServiceId: id }, transaction: t });
+
+    if (!bill) {
+      return res.status(404).json({
+        ok: false,
+        status: 404,
+        message: 'El servicio no tiene una factura asociada'
+      });
+    }
+
+    // marco la factura como pagada 
+    await bill.update(
+      {
+        pagado: true,
+        pendiente: false,
+      },
+      {
+        transaction: t
+      }
+    )
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      message: `El servicio con id ${id} ha finalizado`
+    });
+  }).catch ((error) => {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al finalizar el servicio',
+      error: error.message
+    });
+    console.error('Error al finalizar el servicio:', error);
   })
 });
 

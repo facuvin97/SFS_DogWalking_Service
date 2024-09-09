@@ -62,6 +62,16 @@ Service.init(
       allowNull: false,
       defaultValue: false
     },
+    comenzado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    finalizado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
     calificado_x_cliente: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
