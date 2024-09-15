@@ -65,8 +65,11 @@ router.get('/services/turn/:turn_id', async (req, res) => {
 });
 
 //obtener todos los servicios de un turno para el dia actual
-router.get('/services/turn/today/:turn_id', async (req, res) => {
+router.get('/services/turn/today/:turn_id/:date', async (req, res) => {
   const turnId = req.params.turn_id;
+  const date = req.params.date
+
+  
 
   // Obtener la fecha y hora actual
   const fechaHoraActual = new Date();
@@ -82,7 +85,7 @@ router.get('/services/turn/today/:turn_id', async (req, res) => {
     const services = await Service.findAll({
       where: {
         TurnId: turnId,
-        fecha: formattedFechaActual,
+        fecha: date,
         aceptado: true
       }
     });
