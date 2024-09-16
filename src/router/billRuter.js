@@ -106,8 +106,7 @@ router.get("/bills/client/:client_id", async (req, res) => {
   const clientId = req.params.client_id;
   const bills = await Bill.findAll({
     include: {
-      model: Service, 
-      attributes: [], // No incluir ningún campo del Service
+      model: Service,
       where: {
         ClientId: clientId
       }
