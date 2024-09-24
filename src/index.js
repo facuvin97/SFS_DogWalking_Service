@@ -31,40 +31,40 @@ const io = new Server(server, {
   },
 });
 
-// Manejar conexiones de WebSocket
 io.on('connection', (socket) => {
   console.log(`Usuario conectado: ${socket.id}`);
 
-  // Manejar el envío de mensajes a un cliente específico
-  socket.on('sendMessage', async ({ senderId, receiverId, message }) => {
+  // Manejar el envío de mensajes
+  socket.on('sendMessage', async ({ senderId, receiverId, contenido }) => {
     try {
       // Obtener la fecha y hora actual
-      const fechaHoraActual =format( new Date(), 'yyyy-MM-dd HH:mm');
-  
+      const fechaHoraActual = format(new Date(), 'yyyy-MM-dd HH:mm');
+      
       // Crear y guardar el mensaje en la base de datos
       const newMessage = await Message.create({
         senderId,
         receiverId,
-        contenido: message,
+        contenido,
         fechaHora: fechaHoraActual,
       });
-  
+
+      // Enviar el mensaje al emisor para mostrarlo localmente
+      socket.emit('receiveMessage', {
+        senderId,
+        receiverId,
+        contenido: newMessage.contenido,
+      });
+
       // Encontrar el socket del receptor usando receiverId
       const targetSocket = Array.from(io.sockets.sockets)
-        .find(([id, s]) => {          
-          return ((s.handshake.auth.userId).toString() === receiverId.toString())
-
-        }); // Verifica que estés usando el campo correcto para buscar el socket
-
+        .find(([id, s]) => (s.handshake.auth.userId).toString() === receiverId.toString());
 
       if (targetSocket) {
-
-        // HAY QUE ENVIAR EL MENSAJE AL SENDER TAMBIEN !!!!!!!!!!!!!!!!!!!!!
-        
         // Enviar el mensaje al receptor
         targetSocket[1].emit('receiveMessage', {
           senderId,
-          message: newMessage.contenido,
+          receiverId,
+          contenido: newMessage.contenido,
         });
       } else {
         console.log(`Usuario con id ${receiverId} no está conectado.`);
@@ -73,7 +73,6 @@ io.on('connection', (socket) => {
       console.error('Error al enviar mensaje:', error);
     }
   });
-  
 
   // Manejar la desconexión del cliente
   socket.on('disconnect', () => {
