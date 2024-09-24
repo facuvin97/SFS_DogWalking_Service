@@ -1,11 +1,16 @@
-const app = require("./app/app");
-
+const app = require("./app/app"); // Tu aplicación Express
+const http = require('http'); // Para crear el servidor HTTP
+const { Server } = require('socket.io'); // Para usar WebSocket
 const sequelize = require("./config/db");
 const Client = require("./models/Client");
 const Message = require("./models/Message");
 const User = require("./models/User");
 const Walker = require("./models/Walker");
 const associations = require('./models/associations');
+const { format } =require( 'date-fns');
+
+const port = process.env.PORT || 3001
+
 
 // Obtener todos los nombres de los modelos definidos
 const modelNames = Object.keys(sequelize.models);
@@ -16,6 +21,67 @@ const modelosSequelize = modelNames.filter(modelName => {
   return modelo.prototype instanceof sequelize.Sequelize.Model;
 });
 
+// Crear el servidor HTTP utilizando tu app actual de Express
+const server = http.createServer(app);
+
+// Configurar socket.io para manejar WebSocket
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Configurar orígenes permitidos (ajusta según tu necesidad)
+  },
+});
+
+// Manejar conexiones de WebSocket
+io.on('connection', (socket) => {
+  console.log(`Usuario conectado: ${socket.id}`);
+
+  // Manejar el envío de mensajes a un cliente específico
+  socket.on('sendMessage', async ({ senderId, receiverId, message }) => {
+    try {
+      // Obtener la fecha y hora actual
+      const fechaHoraActual =format( new Date(), 'yyyy-MM-dd HH:mm');
+  
+      // Crear y guardar el mensaje en la base de datos
+      const newMessage = await Message.create({
+        senderId,
+        receiverId,
+        contenido: message,
+        fechaHora: fechaHoraActual,
+      });
+  
+      // Encontrar el socket del receptor usando receiverId
+      const targetSocket = Array.from(io.sockets.sockets)
+        .find(([id, s]) => {          
+          return ((s.handshake.auth.userId).toString() === receiverId.toString())
+
+        }); // Verifica que estés usando el campo correcto para buscar el socket
+
+
+      if (targetSocket) {
+
+        // HAY QUE ENVIAR EL MENSAJE AL SENDER TAMBIEN !!!!!!!!!!!!!!!!!!!!!
+        
+        // Enviar el mensaje al receptor
+        targetSocket[1].emit('receiveMessage', {
+          senderId,
+          message: newMessage.contenido,
+        });
+      } else {
+        console.log(`Usuario con id ${receiverId} no está conectado.`);
+      }
+    } catch (error) {
+      console.error('Error al enviar mensaje:', error);
+    }
+  });
+  
+
+  // Manejar la desconexión del cliente
+  socket.on('disconnect', () => {
+    console.log(`Usuario ${socket.userId || 'desconocido'} desconectado.`);
+  });
+});
+
+// Función para limpiar índices redundantes
 async function cleanupIndexes() {
   try {
     for (const modelName of modelosSequelize) {
@@ -55,25 +121,26 @@ async function cleanupIndexes() {
   }
 }
 
-// Ejecutar el script de limpieza de índices y luego sincronizar la base de datos
+// Sincronizar base de datos y añadir la funcionalidad de WebSocket
 async function initDatabase() {
   try {
-    await cleanupIndexes(); 
-    await sequelize.sync({ alter: false}); // Opción 'alter' para sincronización no destructiva
+    await cleanupIndexes();
+    await sequelize.sync({ alter: false }); // Opción 'alter' para sincronización no destructiva
     console.log('¡Tablas sincronizadas!');
   } catch (error) {
     console.error('Error durante la inicialización:', error);
   }
 }
 
+// Iniciar la base de datos y levantar el servidor HTTP + WebSocket
 initDatabase().then(() => {
   console.log('Índices limpiados y base de datos sincronizada.');
+  
+  // Levantar el servidor en el puerto 3000 (puedes cambiarlo si es necesario)
+  server.listen(port, () => {
+    console.log('Servidor escuchando en el puerto 3001 con WebSocket habilitado.');
+  });
+
 }).catch(error => {
   console.error('Error durante la inicialización:', error);
-});
-
-const port = process.env.PORT || 3001;
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
 });
