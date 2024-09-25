@@ -39,6 +39,8 @@ router.get('/services/client/:client_id', async (req, res) => {
   }
 });
 
+
+
 //obtener todos los servicios de un turno
 router.get('/services/turn/:turn_id', async (req, res) => {
   const turnId = req.params.turn_id;

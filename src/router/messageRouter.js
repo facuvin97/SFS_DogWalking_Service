@@ -1,6 +1,9 @@
 const User = require("../models/User")
 const Message = require("../models/Message.js")
 const { Op } = require('sequelize');
+const Client = require("../models/Client.js");
+const Service = require("../models/Service.js");
+const Turn = require("../models/Turn.js");
 
 
 const router = require("express").Router()
@@ -44,60 +47,89 @@ router.get('/messages/:senderId/:reciverId', async (req, res) => {
   }
 });
 
-router.get('/contacts/:userId', async (req, res) => {
+// Obtener todos los usuarios que tienen mensajes con un usuario específico
+router.get("/contacts/:userId", async (req, res) => {
+  const userId = req.params.userId; // Este es el ID del walker
+
   try {
-    const userId = req.params.userId;
-
-    // Comprobar que el userId es válido
-    const user = await User.findByPk(userId);
-
-    if (!user) {
-      return res.status(404).json({ ok: false, error: 'Usuario no encontrado' });
-    }
-
-    // Buscar todos los mensajes donde el usuario haya sido el remitente o el destinatario
+    // Obtener todos los mensajes donde el walker es el remitente o el destinatario
     const messages = await Message.findAll({
       where: {
         [Op.or]: [
           { senderId: userId },
           { receiverId: userId }
-        ]
+        ],
       },
-      attributes: ['senderId', 'receiverId'], // Solo obtener senderId y receiverId
+      attributes: ['senderId', 'receiverId'],
     });
 
-    // Obtener los IDs únicos de los contactos, excluyendo el usuario actual
-    const contactIds = new Set();
+    // Obtener los IDs únicos de clientes que tienen mensajes
+    const messageContactIds = new Set();
     messages.forEach(msg => {
-      if (msg.senderId !== userId && msg.receiverId == userId) {
-        contactIds.add(msg.senderId); // Agregar el remitente si no es el usuario actual
+      if (msg.senderId !== userId) {
+        messageContactIds.add(msg.senderId); // Agregar el remitente
       }
-      if (msg.receiverId !== userId && msg.senderId == userId) {
-        contactIds.add(msg.receiverId); // Agregar el destinatario si no es el usuario actual
+      if (msg.receiverId !== userId) {
+        messageContactIds.add(msg.receiverId); // Agregar el destinatario
       }
     });
 
-    // Si no se encontraron contactos, devolver una lista vacía
-    if (contactIds.size === 0) {
-      return res.status(200).json({ ok: true, status: 200, body: [] });
-    }
+    // Obtener todos los clientes que solicitaron un servicio en los turnos del walker
+    const serviceClients = await Client.findAll({
+      include: [
+        {
+          model: User, // Incluir al usuario asociado con el cliente
+        },
+        {
+          model: Service,
+          required: true,
+          attributes: [], // No incluir campos de Service
+          include: {
+            model: Turn,
+            required: true, // Incluir el turno asociado con el servicio
+            attributes: [], // No incluir campos de Turn
+            where: { walkerId: userId }, // Filtro por el walker logueado
+          },
+        },
+      ],
+    });
 
-    // Obtener los detalles de los contactos únicos encontrados, excluyendo el usuario actual
-    const contacts = await User.findAll({
+    // Crear un Set para almacenar todos los IDs únicos de clientes
+    const allClientIds = new Set();
+
+    // Agregar IDs de clientes con mensajes
+    messageContactIds.forEach(id => allClientIds.add(id));
+
+    // Agregar IDs de clientes con servicios
+    serviceClients.forEach(client => allClientIds.add(client.id));
+
+    // Obtener detalles completos de los clientes únicos
+    const uniqueClients = await Client.findAll({
       where: {
-        id: Array.from(contactIds)
+        id: Array.from(allClientIds) // Filtrar por los IDs únicos
       },
+      include: {
+        model: User, // Incluir al usuario asociado
+      }
     });
 
     res.status(200).json({
       ok: true,
       status: 200,
-      body: contacts,
+      body: uniqueClients,
     });
   } catch (error) {
-    res.status(400).json({ ok: false, error: error.message });
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al obtener los clientes',
+      error: error.message,
+    });
+    console.error('Error al obtener los clientes:', error);
   }
 });
+
+
 
 
 

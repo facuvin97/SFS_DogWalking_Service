@@ -2,9 +2,14 @@ const Client = require("../models/Client")
 const User = require("../models/User")
 const sequelize = require('../config/db.js');
 const Pet = require('../models/Pet');
+const Walker = require("../models/Walker.js");
+const Turn = require("../models/Turn.js");
+const Service = require("../models/Service.js");
+const { Op } = require("sequelize");
 
 const router = require("express").Router()
 
+// Obtener todos los clientes
 router.get("/clients", async (req, res) => {
   const clients = await Client.findAll({
     include: User
@@ -16,6 +21,7 @@ router.get("/clients", async (req, res) => {
   })
 })
 
+// Obtener un cliente por su ID
 router.get("/clients/:client_id", async (req, res) => {
   const id = req.params.client_id;
   const client = await Client.findOne({
@@ -31,6 +37,7 @@ router.get("/clients/:client_id", async (req, res) => {
   })
 })
 
+// Crear un cliente
 router.post("/clients", async (req, res) => {
   sequelize.transaction(async (t) => {
     const userData = req.body
@@ -66,6 +73,7 @@ router.post("/clients", async (req, res) => {
   });
 })
 
+// Actualizar un cliente
 router.put("/clients/:client_id", async (req, res) => {
   try {
     const id = req.params.client_id
@@ -98,6 +106,7 @@ router.put("/clients/:client_id", async (req, res) => {
   }
 })
 
+// Eliminar un cliente
 router.delete("/clients/:client_id", async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.client_id
@@ -136,6 +145,7 @@ router.delete("/clients/:client_id", async (req, res) => {
   });
 })
 
+// Obtener todos los mascotas de un cliente
 router.get("/clients/:client_id/pets", async (req, res) => {
   const clientId = req.params.client_id;
 
