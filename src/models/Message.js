@@ -22,7 +22,17 @@ Message.init({
   },
   imagen: {
     type: DataTypes.BLOB // Assumiendo que guardas la imagen como datos binarios en la base de datos
-  }
+  },
+  sent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true, // Estado por defecto: "false"
+  },
+  read: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false, // Estado por defecto: "false"
+  },
 }, {
   sequelize,
   modelName: 'Message'

@@ -44,6 +44,61 @@ router.get('/messages/:senderId/:reciverId', async (req, res) => {
   }
 });
 
+router.get('/contacts/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Comprobar que el userId es válido
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ ok: false, error: 'Usuario no encontrado' });
+    }
+
+    // Buscar todos los mensajes donde el usuario haya sido el remitente o el destinatario
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [
+          { senderId: userId },
+          { receiverId: userId }
+        ]
+      },
+      attributes: ['senderId', 'receiverId'], // Solo obtener senderId y receiverId
+    });
+
+    // Obtener los IDs únicos de los contactos, excluyendo el usuario actual
+    const contactIds = new Set();
+    messages.forEach(msg => {
+      if (msg.senderId !== userId && msg.receiverId == userId) {
+        contactIds.add(msg.senderId); // Agregar el remitente si no es el usuario actual
+      }
+      if (msg.receiverId !== userId && msg.senderId == userId) {
+        contactIds.add(msg.receiverId); // Agregar el destinatario si no es el usuario actual
+      }
+    });
+
+    // Si no se encontraron contactos, devolver una lista vacía
+    if (contactIds.size === 0) {
+      return res.status(200).json({ ok: true, status: 200, body: [] });
+    }
+
+    // Obtener los detalles de los contactos únicos encontrados, excluyendo el usuario actual
+    const contacts = await User.findAll({
+      where: {
+        id: Array.from(contactIds)
+      },
+    });
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      body: contacts,
+    });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 
 
 

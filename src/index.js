@@ -30,6 +30,23 @@ const io = new Server(server, {
     origin: '*', // Configurar orígenes permitidos (ajusta según tu necesidad)
   },
 });
+// Función auxiliar para emitir un mensaje
+function emitMessage(socket, message) {
+  socket.emit('receiveMessage', {
+    id: message.id,
+    senderId: message.senderId,
+    receiverId: message.receiverId,
+    contenido: message.contenido,
+    sent: message.sent,
+    read: message.read,
+  });
+}
+
+// Función auxiliar para obtener el socket de un usuario por userId
+function getSocketByUserId(userId) {
+  return Array.from(io.sockets.sockets)
+    .find(([id, s]) => s.handshake.auth.userId.toString() === userId.toString());
+}
 
 io.on('connection', (socket) => {
   console.log(`Usuario conectado: ${socket.id}`);
@@ -37,7 +54,6 @@ io.on('connection', (socket) => {
   // Manejar el envío de mensajes
   socket.on('sendMessage', async ({ senderId, receiverId, contenido }) => {
     try {
-      // Obtener la fecha y hora actual
       const fechaHoraActual = format(new Date(), 'yyyy-MM-dd HH:mm');
       
       // Crear y guardar el mensaje en la base de datos
@@ -46,26 +62,19 @@ io.on('connection', (socket) => {
         receiverId,
         contenido,
         fechaHora: fechaHoraActual,
+        sent: true,
+        read: false,
       });
 
       // Enviar el mensaje al emisor para mostrarlo localmente
-      socket.emit('receiveMessage', {
-        senderId,
-        receiverId,
-        contenido: newMessage.contenido,
-      });
+      emitMessage(socket, newMessage);
 
-      // Encontrar el socket del receptor usando receiverId
-      const targetSocket = Array.from(io.sockets.sockets)
-        .find(([id, s]) => (s.handshake.auth.userId).toString() === receiverId.toString());
+      // Encontrar el socket del receptor
+      const targetSocket = getSocketByUserId(receiverId);
 
       if (targetSocket) {
         // Enviar el mensaje al receptor
-        targetSocket[1].emit('receiveMessage', {
-          senderId,
-          receiverId,
-          contenido: newMessage.contenido,
-        });
+        emitMessage(targetSocket[1], newMessage);
       } else {
         console.log(`Usuario con id ${receiverId} no está conectado.`);
       }
@@ -78,7 +87,45 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`Usuario ${socket.userId || 'desconocido'} desconectado.`);
   });
+
+  // Manejar cuando el receptor se conecta
+  socket.on('getUnreadMessages', async ({ receiverId }) => {
+    try {
+      const unreadMessages = await Message.findAll({
+        where: {
+          receiverId: receiverId,
+          read: false,
+        },
+      });
+      
+      socket.emit('unreadMessages', unreadMessages);
+    } catch (error) {
+      console.error('Error al obtener mensajes no leídos:', error);
+    }
+  });
+
+  // Marcar un mensaje como leído
+  socket.on('messageRead', async ({ messageId }) => {
+    try {
+      const message = await Message.findByPk(messageId);
+      if (message) {
+        await message.update({ read: true });
+
+        // Emitir el evento 'messageRead' al receptor
+        socket.emit('messageRead', { messageId: message.id, read: true });
+
+        // Emitir el evento 'messageRead' al remitente si está conectado
+        const senderSocket = getSocketByUserId(message.senderId);
+        if (senderSocket) {
+          senderSocket[1].emit('messageRead', { messageId: message.id, read: true });
+        }
+      }
+    } catch (error) {
+      console.error('Error al actualizar el estado del mensaje:', error);
+    }
+  });
 });
+
 
 // Función para limpiar índices redundantes
 async function cleanupIndexes() {
@@ -135,7 +182,7 @@ async function initDatabase() {
 initDatabase().then(() => {
   console.log('Índices limpiados y base de datos sincronizada.');
   
-  // Levantar el servidor en el puerto 3000 (puedes cambiarlo si es necesario)
+  // Levantar el servidor en el puerto 3001 (puedes cambiarlo si es necesario)
   server.listen(port, () => {
     console.log('Servidor escuchando en el puerto 3001 con WebSocket habilitado.');
   });
