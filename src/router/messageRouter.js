@@ -129,10 +129,40 @@ router.get("/contacts/:userId", async (req, res) => {
   }
 });
 
+router.get("/unread/:userId", async (req, res) => {  
+  const userId = req.params.userId; // Este es el ID del walker
 
-
-
-
-
+  try {
+    const user1 = await User.findByPk(userId);
+    if (!user1) {
+      res.status(404).json({ ok: false, error: 'Usuario no encontrado' });
+      return;
+    }
+    // Obtener todos los mensajes no leidos del usuario
+    const unreadMessages = await Message.findAll({
+      where: {
+        [Op.and]: [
+          { read: false },
+          { receiverId: userId },
+        ],    
+      },  
+      order: [['createdAt', 'DESC']] // Ordenar por fecha de creación (opcional)
+    });   
+      
+    res.status(200).json({  
+      ok: true,  
+      status: 200,  
+      body: unreadMessages  
+    });  
+  } catch (error) {  
+    res.status(500).json({  
+      ok: false,  
+      status: 500,  
+      message: 'Error al obtener los mensajes no leidos',  
+      error: error.message,  
+    });  
+    console.error('Error al obtener los mensajes no leidos:', error);  
+  }  
+});
 
 module.exports = router

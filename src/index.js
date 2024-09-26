@@ -89,11 +89,12 @@ io.on('connection', (socket) => {
   });
 
   // Manejar cuando el receptor se conecta
-  socket.on('getUnreadMessages', async ({ receiverId }) => {
+  socket.on('getUnreadMessages', async ({ receiverId, senderId }) => {
     try {
       const unreadMessages = await Message.findAll({
         where: {
           receiverId: receiverId,
+          senderId: senderId,
           read: false,
         },
       });
