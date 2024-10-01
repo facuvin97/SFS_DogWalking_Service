@@ -36,6 +36,21 @@ router.get("/clients/:client_id", async (req, res) => {
     data: client
   })
 })
+// Obtener un cliente por su ID
+router.get("/clients/body/:client_id", async (req, res) => {
+  const id = req.params.client_id;
+  const client = await Client.findOne({
+    where: {
+      id: id
+    },
+    include: User
+  })
+  res.status(200).json({
+    ok: true,
+    status: 200,
+    body: client
+  })
+})
 
 // Crear un cliente
 router.post("/clients", async (req, res) => {
