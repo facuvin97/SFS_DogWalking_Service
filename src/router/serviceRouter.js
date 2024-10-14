@@ -11,6 +11,11 @@ const Bill = require('../models/Bill.js');
 const router = Router();
 const moment = require('moment-timezone');
 const { format } = require('date-fns');
+const Message = require("../models/Message.js");
+const { getIO } = require('../config/socket.js');
+
+
+
 
 
 // Obtener todos los servicios de un cliente
@@ -38,8 +43,6 @@ router.get('/services/client/:client_id', async (req, res) => {
     console.error('Error al obtener los servicios:', error);
   }
 });
-
-
 
 //obtener todos los servicios de un turno
 router.get('/services/turn/:turn_id', async (req, res) => {
@@ -231,6 +234,41 @@ router.post('/services', async (req, res) => {
       userId: turn.WalkerId
     }, { transaction: t });
 
+
+
+    const newMessage = await Message.create({
+      senderId: serviceData.ClientId,
+      receiverId: turn.WalkerId,
+      contenido:'Te he solicitado un servicio para el día ' + serviceData.fecha + '.',
+      fechaHora: formattedFechaHoraActual,
+      sent: true,
+      read: false,
+    });
+
+    const io = getIO(); // Obtén la instancia de io
+
+    // Función auxiliar para obtener el socket de un usuario por userId
+    function getSocketByUserId(userId) {
+      const socketEntry = Array.from(io.sockets.sockets).find(
+        ([, socket]) => socket.handshake.auth.userId.toString() === userId.toString()
+      );
+      
+      return socketEntry ? socketEntry[1] : null; // Devolver solo el socket
+    }
+
+    // Emitir el mensaje mediante socket.io al paseador
+    const targetSocket = getSocketByUserId(turn.WalkerId);
+    if (targetSocket) {
+     targetSocket.emit('receiveMessage', {
+       id: newMessage.id,
+       senderId: newMessage.senderId,
+       receiverId: newMessage.receiverId,
+       contenido: newMessage.contenido,
+       sent: newMessage.sent,
+       read: newMessage.read,
+     });
+    }
+
     res.status(201).json({
       ok: true,
       status: 201,
@@ -293,19 +331,14 @@ router.put('/services/:service_id', async (req, res) => {
 
     //traigo el turno para tener el id del walker
     const turn = await Turn.findByPk(existingService.TurnId, {transaction: t})
-    const today = moment().tz('America/Montevideo') // Reemplaza 'America/Bogota' con la zona horaria de tu país
+    const today = moment().tz('America/Montevideo')
 
-
-
-
-    
     const bill = await Bill.create({ 
       fecha: formattedFechaActual,     
       monto: existingService.cantidad_mascotas * turn.tarifa,
       ServiceId: existingService.id,     
     }, {transaction: t});
     console.log("\n\n\nfectura today despues de creada: " ,bill.fecha)
-
 
 
     // envio una notificacion al cliente
@@ -315,6 +348,39 @@ router.put('/services/:service_id', async (req, res) => {
       userId: existingService.ClientId,
       fechaHora: formattedFechaHoraActual
     }, { transaction: t });
+
+    const newMessage = await Message.create({
+      senderId: turn.WalkerId,
+      receiverId: existingService.ClientId,
+      contenido:'He aceptado tu solicitud de servicio para el dia ' + existingService.fecha + '.',
+      fechaHora: formattedFechaHoraActual,
+      sent: true,
+      read: false,
+    },  { transaction: t });
+
+    const io = getIO(); // Obtén la instancia de io
+
+    // Función auxiliar para obtener el socket de un usuario por userId
+    function getSocketByUserId(userId) {
+      const socketEntry = Array.from(io.sockets.sockets).find(
+        ([, socket]) => socket.handshake.auth.userId.toString() === userId.toString()
+      );
+      
+      return socketEntry ? socketEntry[1] : null; // Devolver solo el socket
+    }
+
+    // Emitir el mensaje mediante socket.io al cliente
+    const targetSocket = getSocketByUserId(existingService.ClientId);
+    if (targetSocket) {
+     targetSocket.emit('receiveMessage', {
+       id: newMessage.id,
+       senderId: newMessage.senderId,
+       receiverId: newMessage.receiverId,
+       contenido: newMessage.contenido,
+       sent: newMessage.sent,
+       read: newMessage.read,
+     });
+    }
 
     res.status(200).json({
       ok: true,

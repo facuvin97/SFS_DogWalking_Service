@@ -2,6 +2,7 @@ const User = require("../models/User")
 const Message = require("../models/Message.js")
 const { Op } = require('sequelize');
 const Client = require("../models/Client.js");
+const Walker = require("../models/Walker.js");
 const Service = require("../models/Service.js");
 const Turn = require("../models/Turn.js");
 
@@ -48,7 +49,7 @@ router.get('/messages/:senderId/:reciverId', async (req, res) => {
 });
 
 // Obtener todos los usuarios que tienen mensajes con un usuario específico
-router.get("/contacts/:userId", async (req, res) => {
+router.get("/contacts/clients/:userId", async (req, res) => {
   const userId = req.params.userId; // Este es el ID del walker
 
   try {
@@ -128,9 +129,86 @@ router.get("/contacts/:userId", async (req, res) => {
     console.error('Error al obtener los clientes:', error);
   }
 });
+router.get("/contacts/walkers/:userId", async (req, res) => {
+  const userId = req.params.userId; // Este es el ID del cliente
+
+  try {
+    // Obtener todos los mensajes donde el usuario es el remitente o el destinatario
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [
+          { senderId: userId },
+          { receiverId: userId }
+        ],
+      },
+      attributes: ['senderId', 'receiverId'],
+    });
+
+    // Obtener los IDs únicos de walkers con los que el usuario ha tenido mensajes
+    const messageWalkerIds = new Set();
+    messages.forEach(msg => {
+      if (msg.senderId !== userId) {
+        messageWalkerIds.add(msg.senderId); // Agregar el remitente (si no es el usuario)
+      }
+      if (msg.receiverId !== userId) {
+        messageWalkerIds.add(msg.receiverId); // Agregar el destinatario (si no es el usuario)
+      }
+    });
+
+    // Obtener todos los walkers que prestaron un servicio solicitado por el cliente
+    const serviceWalkers = await Walker.findAll({
+      include: [
+        {
+          model: Turn, // Relación del paseador con el turno
+          required: true,
+          attributes: [], // No incluir campos de Turn
+          include: {
+            model: Service, // El turno está asociado con un servicio
+            required: true,
+            attributes: [], // No incluir campos de Service
+            where: { clientId: userId }, // Filtro por el cliente logueado
+          },
+        },
+      ],
+    });
+
+    // Crear un Set para almacenar todos los IDs únicos de walkers
+    const allWalkerIds = new Set();
+
+    // Agregar IDs de walkers con mensajes
+    messageWalkerIds.forEach(id => allWalkerIds.add(id));
+
+    // Agregar IDs de walkers con servicios
+    serviceWalkers.forEach(walker => allWalkerIds.add(walker.id));
+
+    // Obtener detalles completos de los walkers únicos
+    const uniqueWalkers = await Walker.findAll({
+      where: {
+        id: Array.from(allWalkerIds) // Filtrar por los IDs únicos
+      },
+      include: {
+        model: User, // Incluir al usuario asociado
+      }
+    });
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      body: uniqueWalkers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al obtener los walkers',
+      error: error.message,
+    });
+    console.error('Error al obtener los walkers:', error);
+  }
+});
 
 router.get("/unread/:userId", async (req, res) => {  
-  const userId = req.params.userId; // Este es el ID del walker
+  const userId = req.params.userId; // Este es el ID del usuario
 
   try {
     const user1 = await User.findByPk(userId);

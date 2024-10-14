@@ -8,6 +8,7 @@ const Notification = require("./Notification")
 const Pet = require("./Pet");
 const Review = require("./Review");
 const Bill = require("./Bill");
+const Location = require("./Location");
 
 //Servicio - Factura
 
@@ -41,6 +42,10 @@ Client.hasMany(Service)
 // Cliente - Mascota
 Client.hasMany(Pet, { foreignKey: 'clientId' });
 Pet.belongsTo(Client, { foreignKey: 'clientId' });
+
+// Walker - Location
+Walker.hasOne(Location);
+Location.belongsTo(Walker);
 
 module.exports = {
     Message,

@@ -284,18 +284,6 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
 
     const walker = bill.Service.Turn.Walker
 
-    //TODO:
-    /* E:\proyecto_final\group_app\SFS_DogWalking_Service\src\router\walkerRouter.js:285
-    const walker = bill.Service.Turn.Walker
-                                ^
-
-    TypeError: Cannot read properties of null (reading 'Turn')
-    at E:\proyecto_final\group_app\SFS_DogWalking_Service\src\router\walkerRouter.js:285:33
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-
-    Node.js v20.12.2
-    Failed running 'src/index.js' */
-
     res.status(200).json({
       ok: true,
       status: 200,
