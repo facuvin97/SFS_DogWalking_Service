@@ -9,6 +9,30 @@ const Turn = require("../models/Turn.js");
 
 const router = require("express").Router()
 
+// obtener un mensaje por su id
+  router.get('/messages/single/:messageId', async (req, res) => {
+    try {
+      const id = req.params.messageId;
+      const message = await Message.findByPk(
+        id,
+        {
+          attributes: ['id','createdAt', 'senderId', 'receiverId'],
+        }
+      );
+      if (!message) {
+        res.status(404).json({ ok: false, error: 'Mensaje no encontrado' });
+        return;
+      }
+      res.status(200).json({
+        ok: true,
+        status: 200,
+        body: message
+      });
+    } catch (error) {
+      res.status(400).json({ ok: false, error: error.message });
+    }
+  });
+
 
 // Obtener las mensages de un usuario vinculado a otro
 router.get('/messages/:senderId/:reciverId', async (req, res) => {
@@ -78,9 +102,7 @@ router.get("/contacts/clients/:userId", async (req, res) => {
     // Obtener todos los clientes que solicitaron un servicio en los turnos del walker
     const serviceClients = await Client.findAll({
       include: [
-        {
-          model: User, // Incluir al usuario asociado con el cliente
-        },
+        { model: User }, // Incluir al usuario asociado con el cliente
         {
           model: Service,
           required: true,
@@ -96,28 +118,59 @@ router.get("/contacts/clients/:userId", async (req, res) => {
     });
 
     // Crear un Set para almacenar todos los IDs únicos de clientes
-    const allClientIds = new Set();
-
-    // Agregar IDs de clientes con mensajes
-    messageContactIds.forEach(id => allClientIds.add(id));
-
-    // Agregar IDs de clientes con servicios
+    const allClientIds = new Set([...messageContactIds]);
     serviceClients.forEach(client => allClientIds.add(client.id));
 
     // Obtener detalles completos de los clientes únicos
     const uniqueClients = await Client.findAll({
-      where: {
-        id: Array.from(allClientIds) // Filtrar por los IDs únicos
-      },
+      where: { id: Array.from(allClientIds) },
+      attributes: ['id'],
       include: {
-        model: User, // Incluir al usuario asociado
-      }
+        model: User , // Incluir al usuario asociado
+        attributes: [
+          'id',
+          'foto',
+          'nombre_usuario',
+        ],
+      },
+    });
+
+    // Para cada cliente, buscar el último mensaje con el walker
+    const clientsWithLastMessage = await Promise.all(
+      uniqueClients.map(async (client) => {
+        const lastMessage = await Message.findOne({
+          where: {
+            [Op.or]: [
+              { senderId: userId, receiverId: client.id },
+              { senderId: client.id, receiverId: userId },
+            ],
+          },
+          attributes: ['id','createdAt', 'senderId', 'receiverId'],
+          order: [['createdAt', 'DESC']], // Ordenar por fecha más reciente
+          limit: 1, // Obtener solo el último mensaje
+        });
+
+        // Agregar el último mensaje como un campo adicional en el cliente
+        return {
+          ...client.toJSON(), // Convertimos el modelo Sequelize a un objeto plano
+          lastMessage: lastMessage || null, // Si no hay mensaje, retorna null
+        };
+      })
+    );
+
+    // Ordenar la lista de clientes por la fecha del último mensaje
+    const sortedClients = clientsWithLastMessage.sort((a, b) => {
+      const dateA = a.lastMessage ? a.lastMessage.createdAt : null;
+      const dateB = b.lastMessage ? b.lastMessage.createdAt : null;
+  
+      // Comparar las fechas
+      return dateB - dateA; // Ordenar de más reciente a más antiguo
     });
 
     res.status(200).json({
       ok: true,
       status: 200,
-      body: uniqueClients,
+      body: sortedClients,
     });
   } catch (error) {
     res.status(500).json({
@@ -129,6 +182,8 @@ router.get("/contacts/clients/:userId", async (req, res) => {
     console.error('Error al obtener los clientes:', error);
   }
 });
+
+
 router.get("/contacts/walkers/:userId", async (req, res) => {
   const userId = req.params.userId; // Este es el ID del cliente
 
@@ -186,15 +241,53 @@ router.get("/contacts/walkers/:userId", async (req, res) => {
       where: {
         id: Array.from(allWalkerIds) // Filtrar por los IDs únicos
       },
+      attributes: ['id'],
       include: {
-        model: User, // Incluir al usuario asociado
-      }
+        model: User , // Incluir al usuario asociado
+        attributes: [
+          'id',
+          'foto',
+          'nombre_usuario',
+        ],
+      },
+    });
+
+    // Para cada walker, buscar el último mensaje con el client
+    const walkersWithLastMessage = await Promise.all( 
+      uniqueWalkers.map(async (walker) => {
+        const lastMessage = await Message.findOne({
+          where: {
+            [Op.or]: [
+              { senderId: userId, receiverId: walker.id },
+              { senderId: walker.id, receiverId: userId },
+            ],
+          },
+          attributes: ['id','createdAt', 'senderId', 'receiverId'],
+          order: [['createdAt', 'DESC']], // Ordenar por fecha más reciente
+          limit: 1, // Obtener solo el último mensaje
+        });
+
+        // Agregar el último mensaje como un campo adicional en el cliente
+        return {
+          ...walker.toJSON(), // Convertimos el modelo Sequelize a un objeto plano
+          lastMessage: lastMessage || null, // Si no hay mensaje, retorna null
+        };
+      })
+    );
+
+    // Ordenar la lista de clientes por la fecha del último mensaje
+    const sortedWalkers = walkersWithLastMessage.sort((a, b) => {
+      const dateA = a.lastMessage ? a.lastMessage.createdAt : null;
+      const dateB = b.lastMessage ? b.lastMessage.createdAt : null;
+  
+      // Comparar las fechas
+      return dateB - dateA; // Ordenar de más reciente a más antiguo
     });
 
     res.status(200).json({
       ok: true,
       status: 200,
-      body: uniqueWalkers,
+      body: sortedWalkers,
     });
   } catch (error) {
     res.status(500).json({

@@ -23,14 +23,6 @@ app.use(express.static('images'));
 
 app.use(morgan("dev")) 
 
-// // Permitir solicitudes desde cualquier origen
-// app.use((req, res, next) => {
-//   res.setHeader('Access-Control-Allow-Origin', '*');
-//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-//   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-//   res.setHeader('Access-Control-Allow-Credentials', true);
-//   next();
-// });
 
 app.use(cors({
   origin: '*', // Esto permite cualquier origen. Puedes especificar el dominio exacto si prefieres.
@@ -41,6 +33,16 @@ app.use(cors({
 // Middleware para analizar el cuerpo de la solicitud en formato JSON
 app.use(express.json());
 
+
+// **Manejadores globales de errores**
+process.on('uncaughtException', (err) => {
+  console.error('Excepción no capturada:', err);
+  process.exit(1); // Opcional: Salir del proceso en errores críticos
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Promesa rechazada sin manejar:', reason);
+});
 
 app.get("/", (req, res) => {
   res.send('This is Express')

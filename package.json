@@ -13,7 +13,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
-    "express": "4.19.2",
+    "express": "^4.21.1",
     "fns": "^1.0.0",
     "fs": "0.0.1-security",
     "mercadopago": "^2.0.11",
