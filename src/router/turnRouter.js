@@ -12,7 +12,6 @@ router.get("/turns/walker/:walker_id", async (req, res) => {
       WalkerId: walkerId
     },
     include: Servicio
-    
   })
   res.status(200).json({
     ok: true,

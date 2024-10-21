@@ -8,6 +8,7 @@ const sequelize = new Sequelize('proyecto_final_bios', 'root', 'root', {
   dialectOptions: {
     timezone: '-03:00', // Ajuste adicional de zona horaria si es necesario
   },
+  logging: false
 });
 
 // Testeo de conexion a la bdd

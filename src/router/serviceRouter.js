@@ -12,7 +12,7 @@ const router = Router();
 const moment = require('moment-timezone');
 const { format } = require('date-fns');
 const Message = require("../models/Message.js");
-const { getIO } = require('../config/socket.js');
+const { getSocketByUserId } = require('../config/socket.js');
 
 
 
@@ -505,6 +505,11 @@ router.put('/services/started/:service_id', async (req, res) => {
       });
     }
 
+    // verifico si es el primer servicio del turno que se ha comenzado
+    const turn = await Turn.findByPk(existingService.TurnId, {transaction: t})
+    const firstService = await Service.findOne({ where: { TurnId: turn.id, comenzado: true, finalizado: false }, transaction: t });
+    console.log("firstService: ", firstService)
+    
     // Actualiza el servicio
     await Service.update(
       {
@@ -514,6 +519,16 @@ router.put('/services/started/:service_id', async (req, res) => {
         where: { id: id }, transaction: t
       },
     );
+
+    if (!firstService) { // si no exisita un servicio comenzado
+      // emito un evento en el socket avisando que comenzo el turno
+      const targetSocket = getSocketByUserId(turn.WalkerId);
+      console.log('targetSocket: ', targetSocket)
+      if (targetSocket) {
+        targetSocket[1].emit('startOrFinishTurn', { id: turn.id });
+        console.log("emito evento de comenzar turno")
+      }
+    }
 
 
     res.status(200).json({
@@ -548,6 +563,8 @@ router.put('/services/finished/:service_id', async (req, res) => {
       });
     }
 
+
+
     // Actualiza el servicio
     await Service.update(
       {
@@ -579,6 +596,26 @@ router.put('/services/finished/:service_id', async (req, res) => {
         transaction: t
       }
     )
+
+    // verifico si hay algun servicio activo
+    const turn = await Turn.findByPk(existingService.TurnId, {transaction: t})
+    const activeService = await Service.findOne({ where: { TurnId: turn.id, comenzado: true, finalizado: false }, transaction: t });
+    console.log("activeService: ", activeService)
+    if (!activeService) {
+      // emito un evento en el socket avisando que finalizo el turno
+      const targetSocket = getSocketByUserId(turn.WalkerId);
+      if (targetSocket) {
+        targetSocket[1].emit('startOrFinishTurn', { id: turn.id });
+        console.log("emito evento de finalizar turno")
+      }
+    }
+
+    //busco el socket del cliente
+    const clientSocket = getSocketByUserId(existingService.ClientId);
+    if (clientSocket) {
+      clientSocket[1].emit('serviceFinished', { id: existingService.id });
+      console.log("emito evento de finalizar servicio")
+    }
 
     res.status(200).json({
       ok: true,

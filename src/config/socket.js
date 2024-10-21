@@ -6,6 +6,12 @@ const Location = require("../models/Location.js");
 
 let io;
 
+// Función auxiliar para obtener el socket de un usuario por userId
+function getSocketByUserId(userId) {
+  return Array.from(io.sockets.sockets)
+    .find(([id, s]) => s.handshake.auth.userId.toString() === userId.toString());
+}
+
 function setupWebSocket(server) {
   const { Server } = require('socket.io');
 
@@ -22,11 +28,7 @@ function setupWebSocket(server) {
     });
   }
 
-  // Función auxiliar para obtener el socket de un usuario por userId
-  function getSocketByUserId(userId) {
-    return Array.from(io.sockets.sockets)
-      .find(([id, s]) => s.handshake.auth.userId.toString() === userId.toString());
-  }
+
   
   // Configurar socket.io para manejar WebSocket
   io = new Server(server, {
@@ -37,6 +39,11 @@ function setupWebSocket(server) {
 
   io.on('connection', (socket) => {
     console.log(`Usuario conectado: ${socket.id}`);
+
+    socket.on('authenticate', (userId) => {
+      socket.userId = userId; // Asignar el userId al socket
+      console.log(`Usuario autenticado: ${userId}`);
+    });
 
     // Manejar la desconexión del cliente
     socket.on('disconnect', () => {
@@ -117,24 +124,33 @@ function setupWebSocket(server) {
     });
 
     // ------------------------------------------ Manejo de geolocalizcion ---------------------------------------
+    
+    // Crear una sala privada
+    socket.on('createRoom', ({ roomName, userId }) => {
+      socket.join(roomName); // Añadir al usuario (paseador) a la sala
+      console.log(`Usuario ${userId} ha creado la sala ${roomName}`);
+    });
+
+    // Permitir que otros usuarios se unan a la sala privada
+    socket.on('joinRoom', ({ roomName, userId }) => {
+      socket.join(roomName);
+      console.log(`Usuario ${userId} se ha unido a la sala ${roomName}`);
+    });
+    
+    //Salir y eliminar sala
+    socket.on('leaveRoom', ({ roomName, userId }) => {
+      socket.leave(roomName);
+      console.log(`Usuario ${userId} ha salido de la sala ${roomName}`);
+    });
+
+  
     // Recibir una nueva ubicación
-    socket.on('newLocation', async ({lat, long, turnId}) => {
+    socket.on('newLocation', async ({roomName, lat, long, walkerId}) => {
       const fechaActual = format(new Date(), 'yyyy-MM-dd');
       const fechaHoraActual = format(new Date(), 'yyyy-MM-dd HH:mm');
       try {
-        //busco el servicio incluyendo el turno
-        const turn = await Turn.findByPk(turnId);
-
-        // si no lo encuentro, tiro error
-        if (!turn) {
-          throw new Error('El turno no existe');
-        }
-
-        if (turn) {
-          const walkerId = turn.WalkerId;
-
           // Verifico si el paseador ya tiene una ubicación
-          const existingLocation = await Location.findOne({ where: { walkerId: walkerId } });
+          const existingLocation = await Location.findOne({ where: { WalkerId: walkerId } });
 
           let location;
 
@@ -143,37 +159,11 @@ function setupWebSocket(server) {
             location = await existingLocation.update({ lat, long, fechaHora: fechaHoraActual });
           } else {
             // si no existe la creo
-            location = await Location.create({ walkerId, lat, long, fechaHora: fechaHoraActual });
+            location = await Location.create({ WalkerId: walkerId, lat, long, fechaHora: fechaHoraActual });
           }
-
-          // Busco todos los clientes con un servicio comenzado en el turno para hoy
-          const services = await Service.findAll({
-            where: {
-              TurnId: turnId,
-              comenzado: true,
-              finalizado: false,
-              fecha: {
-                [Op.eq]: fechaActual
-              }
-            }
-          });
-  
-          // si no hay servicios, no emito nada
-          if (!services.length) {
-            return;
-          }
-
-          // Emitir el evento 'sendNewLocation' a todos los clientes de la lista de servicios
-          services.forEach(async (service) => {
-            const client = await User.findByPk(service.ClientId);
-            if (client) {
-              const clientSocket = getSocketByUserId(client.id);
-              if (clientSocket) {
-                clientSocket[1].emit('sendNewLocation', location);
-              }
-            }
-          });
-        }
+          io.to(roomName).emit('receiveLocation', location);
+          console.log(`Usuario ${socket.userId} ha enviado la ubicación a la sala ${roomName}`);
+        
       } catch (error) {
         console.error('Error al actualizar la ubicacion:', error);
       }
@@ -188,4 +178,4 @@ function getIO() {
   return io;
 }
 
-module.exports = { setupWebSocket, getIO };
+module.exports = { setupWebSocket, getIO, getSocketByUserId };
