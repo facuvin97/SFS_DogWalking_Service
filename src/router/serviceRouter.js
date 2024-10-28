@@ -12,7 +12,7 @@ const router = Router();
 const moment = require('moment-timezone');
 const { format } = require('date-fns');
 const Message = require("../models/Message.js");
-const { getSocketByUserId } = require('../config/socket.js');
+const {getIO, getSocketByUserId } = require('../config/socket.js');
 
 
 

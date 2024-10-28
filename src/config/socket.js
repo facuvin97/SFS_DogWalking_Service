@@ -48,8 +48,7 @@ function setupWebSocket(server) {
     // Manejar la desconexión del cliente
     socket.on('disconnect', () => {
       console.log(`Usuario ${socket.userId || 'desconocido'} desconectado.`);
-    });
-  
+    }); 
 
     // ------------------------------------------ Manejo de mensajes para el chat ---------------------------------------
     // Manejar el envío de mensajes
@@ -138,15 +137,23 @@ function setupWebSocket(server) {
     });
     
     //Salir y eliminar sala
-    socket.on('leaveRoom', ({ roomName, userId }) => {
+    socket.on('leaveRoom', async ({ roomName, userId }) => {
       socket.leave(roomName);
       console.log(`Usuario ${userId} ha salido de la sala ${roomName}`);
+    // Borrar la ubicación del paseador de la base de datos
+    const deleted = await Location.destroy({
+      where: { WalkerId: userId }
+    });
+    if (deleted) {
+      console.log(`Ubicación del paseador con id ${userId} eliminada de la base de datos.`);
+    } else {
+      console.log(`No se encontró la ubicación del paseador con id ${userId} para eliminar.`);
+    }
     });
 
   
     // Recibir una nueva ubicación
     socket.on('newLocation', async ({roomName, lat, long, walkerId}) => {
-      const fechaActual = format(new Date(), 'yyyy-MM-dd');
       const fechaHoraActual = format(new Date(), 'yyyy-MM-dd HH:mm');
       try {
           // Verifico si el paseador ya tiene una ubicación
@@ -167,8 +174,41 @@ function setupWebSocket(server) {
       } catch (error) {
         console.error('Error al actualizar la ubicacion:', error);
       }
-    });
+    });   
+ 
+    // Manejar la solicitud de la última ubicación conocida del paseador
+    socket.on('requestLocation', async ({ roomName }) => {
+      try {
+        // Obtener el walkerId de la sala (puedes deducirlo del nombre de la sala si es algo como 'turn_service_123')
+        const turnId = roomName.split('_').pop(); // Obtiene el TurnId a partir del nombre de la sala
+        const turn = await Turn.findByPk(turnId); // Encuentra el turno en la base de datos
+
+        if (turn) {
+          const walkerId = turn.WalkerId; // Obtén el WalkerId del turno
+
+          // Buscar la última ubicación del paseador
+          const lastLocation = await Location.findOne({ 
+            where: { WalkerId: walkerId }, 
+            order: [['fechaHora', 'DESC']] // Ordenar por la fecha más reciente
+          });
+
+          if (lastLocation) {
+            // Emitir la ubicación actual al cliente que la solicitó
+            socket.emit('receiveLocation', lastLocation);
+            console.log(`Última ubicación del paseador enviada a la sala ${roomName}`);
+          } else {
+            console.log(`No se encontró ubicación para el paseador con id ${walkerId}`);
+          }
+        } else {
+          console.log(`No se encontró el turno con id ${turnId}`);
+        }
+      } catch (error) {
+        console.error('Error al solicitar la ubicación del paseador:', error);
+      }
+    });    
+ 
   });
+    
 }
 
 function getIO() {
