@@ -32,13 +32,6 @@ Walker.init({
   fecha_mercadopago: {
     type: DataTypes.STRING,
     allowNull: true,
-    validate: {
-      isDateFormat(value) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          throw new Error('La fecha debe tener el formato yyyy-MM-dd');
-        }
-      }
-    }
   },
 }, {
   sequelize,

@@ -131,13 +131,22 @@ router.get('/services/walker/:walker_id', async (req, res) => {
           [Op.in]: turnIds
         }
       },
-      include: {
-        model: Turn,
-        include: {
-          model: Walker,
-          include: User
+      include: [
+        {
+          model: Turn,
+          include: {
+            model: Walker,
+            include: User
+          }
+        },
+        {
+          model: Client,
+          include: {
+            model: User,
+            attributes: ['nombre_usuario']
+          }
         }
-      }
+      ]
     });
 
     res.status(200).json({

@@ -35,7 +35,8 @@ Message.init({
   },
 }, {
   sequelize,
-  modelName: 'Message'
+  modelName: 'Message',
+  timestamps: true,
 });
 
 // Message.belongsTo(User, { as: 'sender', foreignKey: 'senderId' });
