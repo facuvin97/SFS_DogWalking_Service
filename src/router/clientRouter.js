@@ -6,11 +6,13 @@ const Walker = require("../models/Walker.js");
 const Turn = require("../models/Turn.js");
 const Service = require("../models/Service.js");
 const { Op } = require("sequelize");
+const bcrypt = require('bcryptjs')
+const authMiddleware = require('../middlewares/authMiddleware')
 
 const router = require("express").Router()
 
 // Obtener todos los clientes
-router.get("/clients", async (req, res) => {
+router.get("/clients", authMiddleware, async (req, res) => {
   const clients = await Client.findAll({
     include: User
   })
@@ -22,7 +24,7 @@ router.get("/clients", async (req, res) => {
 })
 
 // Obtener un cliente por su ID
-router.get("/clients/:client_id", async (req, res) => {
+router.get("/clients/:client_id", authMiddleware, async (req, res) => {
   const id = req.params.client_id;
   const client = await Client.findOne({
     where: {
@@ -37,7 +39,7 @@ router.get("/clients/:client_id", async (req, res) => {
   })
 })
 // Obtener un cliente por su ID
-router.get("/clients/body/:client_id", async (req, res) => {
+router.get("/clients/body/:client_id", authMiddleware, async (req, res) => {
   const id = req.params.client_id;
   const client = await Client.findOne({
     where: {
@@ -56,12 +58,14 @@ router.get("/clients/body/:client_id", async (req, res) => {
 router.post("/clients", async (req, res) => {
   sequelize.transaction(async (t) => {
     const userData = req.body
+    password = bcrypt.hashSync(userData.contraseña, 10)
+
 
     // Crea el usuario
     const user = await User.create({
       foto: userData.foto,
       nombre_usuario: userData.nombre_usuario,
-      contraseña: userData.contraseña,
+      contraseña: password,
       direccion: userData.direccion,
       fecha_nacimiento: userData.fecha_nacimiento,
       email: userData.email,
@@ -94,7 +98,7 @@ router.post("/clients", async (req, res) => {
 })
 
 // Actualizar un cliente
-router.put("/clients/:client_id", async (req, res) => {
+router.put("/clients/:client_id", authMiddleware, async (req, res) => {
   try {
     const id = req.params.client_id
     const userData = req.body
@@ -132,7 +136,7 @@ router.put("/clients/:client_id", async (req, res) => {
 })
 
 // Eliminar un cliente
-router.delete("/clients/:client_id", async (req, res) => {
+router.delete("/clients/:client_id", authMiddleware, async (req, res) => {
   sequelize.transaction(async (t) => {
     const id = req.params.client_id
 
@@ -171,7 +175,7 @@ router.delete("/clients/:client_id", async (req, res) => {
 })
 
 // Obtener todos los mascotas de un cliente
-router.get("/clients/:client_id/pets", async (req, res) => {
+router.get("/clients/:client_id/pets", authMiddleware, async (req, res) => {
   const clientId = req.params.client_id;
 
   try {

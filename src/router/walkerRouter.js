@@ -7,9 +7,11 @@ const Service = require("../models/Service.js");
 const router = require("express").Router()
 const { MercadoPagoConfig, OAuth } = require('mercadopago');
 const globalConstants = require("../const/globalConstants")
+const bcrypt = require('bcryptjs')
+const authMiddleware = require('../middlewares/authMiddleware.js')
 
 // devuelve todo los walkers, incluyendo info de usuario y turno
-router.get("/walkers", async (req, res) => {
+router.get("/walkers", authMiddleware, async (req, res) => {
   const walkers = await Walker.findAll({
     include: [
       {
@@ -28,9 +30,9 @@ router.get("/walkers", async (req, res) => {
     status: 200,
     body: walkers
   })
-})
+} )
 
-router.get("/walkers/:walker_id", async (req, res) => {
+router.get("/walkers/:walker_id", authMiddleware, async (req, res) => {
   const id = req.params.walker_id;
   const walker = await Walker.findOne({
     where: {
@@ -48,12 +50,14 @@ router.get("/walkers/:walker_id", async (req, res) => {
 router.post("/walkers", (req, res, next) => {
   sequelize.transaction(async (t) => {
     const userData = req.body
+    password = bcrypt.hashSync(userData.contraseña, 10)
+
 
     // Crea el usuario
     const user = await User.create({
       foto: userData.foto,
       nombre_usuario: userData.nombre_usuario,
-      contraseña: userData.contraseña,
+      contraseña: password,
       direccion: userData.direccion,
       fecha_nacimiento: userData.fecha_nacimiento,
       email: userData.email,
@@ -83,7 +87,7 @@ router.post("/walkers", (req, res, next) => {
   });
 })
 
-router.put("/walkers/:walker_id", (req, res) => {
+router.put("/walkers/:walker_id", authMiddleware, (req, res) => {
   sequelize.transaction(async (t) => {
     const userData = req.body
     const id = req.params.walker_id
@@ -131,7 +135,7 @@ router.put("/walkers/:walker_id", (req, res) => {
   });
 })
 
-router.delete("/walkers/:walker_id", (req, res) => {
+router.delete("/walkers/:walker_id", authMiddleware, (req, res) => {
   sequelize.transaction(async (t) => {
     const userData = req.body
     const id = req.params.walker_id
@@ -174,7 +178,7 @@ router.delete("/walkers/:walker_id", (req, res) => {
 
 
 // asociar mercado pago
-router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
+router.put("/walkers/mercadopago/:walker_id", authMiddleware, async (req, res) => {
   try {
     const reqData = req.body
     const id = req.params.walker_id
@@ -227,7 +231,7 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
 })
 
   // modificar metodos de cobro
-  router.put("/walkers/cobro/:walker_id", async (req, res) => {
+  router.put("/walkers/cobro/:walker_id", authMiddleware, async (req, res) => {
     const t = await sequelize.transaction();
 
     try {
@@ -266,7 +270,7 @@ router.put("/walkers/mercadopago/:walker_id", async (req, res) => {
 
 
   // obtener walker por el id de la factura
-  router.get("/walkers/byBill/:billId", async (req, res) => {    
+  router.get("/walkers/byBill/:billId", authMiddleware, async (req, res) => {    
     const id = req.params.billId;
     // Obtener la factura por su ID
     const bill = await Bill.findByPk(id, {

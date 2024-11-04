@@ -5,7 +5,9 @@ const sequelize = require('../config/db.js')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs');
-
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const authMiddleware = require('../middlewares/authMiddleware')
 
 
 const defaultImagePath = path.resolve(__dirname, '../../images/no_image.png');
@@ -63,15 +65,14 @@ router.post("/login", async (req, res) => {
       nombre_usuario: username
     }, });
 
-    // Si no se encuentra el usuario, responde con un error de autenticación
-    if (!user) {
-      return res.status(401).json({ ok: false, message: "Usuario y/o contraseña incorrecta" });
-    }
+    var contraseniaCoincide = false
+    if (user)
+      contraseniaCoincide = bcrypt.compareSync(password, user.contraseña)
 
-    // Comprueba si la contraseña coincide con la almacenada en la base de datos
-    if (password !== user.contraseña) {
+    // Si no se encuentra el usuario o la contraseña no coincide, responde con un error de autenticación
+    if (!user || !contraseniaCoincide) {
       return res.status(401).json({ ok: false, message: "Usuario y/o contraseña incorrecta" });
-    }
+    } 
 
     const client = await Client.findByPk(user.id);
     // Si no encontro el cliente, significa que es paseador
@@ -86,7 +87,11 @@ router.post("/login", async (req, res) => {
     }
 
     // Si el usuario y la contraseña son correctos, devuelves el usuario encontrado
-    res.status(200).json({ ok: true, logedUser });
+    res.status(200).json({
+       ok: true, 
+       logedUser, 
+      token: jwt.sign({ userId: user.id }, process.env.JWT_SECRET)
+    })
   } catch (error) {
     console.error("Error de autenticación:", error);
     res.status(500).json({ ok: false, message: "Error de autenticación" });
@@ -94,7 +99,7 @@ router.post("/login", async (req, res) => {
 })
 
 //agregar o cambiar foto de perfil
-router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (req, res) => {
+router.post('/image/single/:nameImage', authMiddleware, images.single('imagenPerfil'), async (req, res) => {
   const username = req.params.nameImage;
 
   const user = await User.findOne({ where: { nombre_usuario: username } });
@@ -115,7 +120,7 @@ router.post('/image/single/:nameImage', images.single('imagenPerfil'), async (re
 })
 
 // subir fotos al perfil del paseador
-router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), async (req, res) => {
+router.post('/image/walker/single/:walkerId', authMiddleware, images.single('imagenPaseador'), async (req, res) => {
   const walkerId = req.params.walkerId;
 
   const walker = await Walker.findOne({ where: { id: walkerId }, include: User });
@@ -166,9 +171,8 @@ router.post('/image/walker/single/:walkerId', images.single('imagenPaseador'), a
   }
 });
 
-
 //solicitud de imagen
-router.get('/image/single/:nameImage', async (req, res) => {
+router.get('/image/single/:nameImage', authMiddleware, async (req, res) => {
   const username = req.params.nameImage;
 
   try {
@@ -197,7 +201,7 @@ router.get('/image/single/:nameImage', async (req, res) => {
 })
 
 
-router.get('/image/walkers/:imageName', async (req, res) => {
+router.get('/image/walkers/:imageName', authMiddleware, async (req, res) => {
 
   const imageName = req.params.imageName;
   try {
@@ -213,7 +217,7 @@ router.get('/image/walkers/:imageName', async (req, res) => {
   }
 })
 
-router.get('/image/walkers', async (req, res) => {
+router.get('/image/walkers', authMiddleware, async (req, res) => {
   try {
     
     const walkers = await Walker.findAll({

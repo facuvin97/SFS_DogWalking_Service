@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
 
+const authMiddleware = require('../middlewares/authMiddleware')
 const routerClient = require("../router/clientRouter")
 const routerWalker = require("../router/walkerRouter")
 const routerUser = require("../router/userRouter")
@@ -14,6 +15,7 @@ const routerBill = require("../router/billRuter")
 const routerPayment = require("../router/paymentRouter")
 const routerMessage = require("../router/messageRouter")
 const errorHandler = require('../middlewares/error')
+
 
 const app = express();
 
@@ -52,14 +54,14 @@ app.get("/", (req, res) => {
 app.use(version, routerClient);
 app.use(version, routerWalker);
 app.use(version, routerUser);
-app.use(version, routerTurn);
-app.use(version, routerService);
-app.use(version, routerNotification);
-app.use(version, routerPet)
-app.use(version, routerReview)
-app.use(version, routerBill)
-app.use(version, routerPayment)
-app.use(version, routerMessage)
+app.use(version, authMiddleware, routerTurn);
+app.use(version, authMiddleware, routerService);
+app.use(version, authMiddleware, routerNotification);
+app.use(version, authMiddleware, routerPet)
+app.use(version, authMiddleware, routerReview)
+app.use(version, authMiddleware, routerBill)
+app.use(version, authMiddleware, routerPayment)
+app.use(version, authMiddleware, routerMessage)
 
 app.use(errorHandler)
 

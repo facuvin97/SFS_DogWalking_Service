@@ -39,7 +39,7 @@ User.init({
         msg: 'El campo "contraseña" no puede estar vacío'
       },
       len: {
-        args: [7, 30],
+        args: [7, 200],
         msg: 'El campo "contraseña" debe tener entre 7 y 30 caracteres'
       }
     }
