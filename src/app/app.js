@@ -13,6 +13,7 @@ const routerReview = require("../router/reviewRouter")
 const routerBill = require("../router/billRuter")
 const routerPayment = require("../router/paymentRouter")
 const routerMessage = require("../router/messageRouter")
+const errorHandler = require('../middlewares/error')
 
 const app = express();
 
@@ -59,5 +60,7 @@ app.use(version, routerReview)
 app.use(version, routerBill)
 app.use(version, routerPayment)
 app.use(version, routerMessage)
+
+app.use(errorHandler)
 
 module.exports = app

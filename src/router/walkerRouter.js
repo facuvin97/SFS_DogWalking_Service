@@ -45,7 +45,7 @@ router.get("/walkers/:walker_id", async (req, res) => {
   })
 })
 
-router.post("/walkers", (req, res) => {
+router.post("/walkers", (req, res, next) => {
   sequelize.transaction(async (t) => {
     const userData = req.body
 
@@ -73,7 +73,12 @@ router.post("/walkers", (req, res) => {
     });
   }).catch((error) => {
     // Si algo falla, revierte la transacción
-    res.status(500).send('Error al crear paseador');
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: "Error al crear paseador",
+      error: error.errors[0].message
+    })
     console.error('Error al crear paseador:', error);
   });
 })
@@ -89,7 +94,6 @@ router.put("/walkers/:walker_id", (req, res) => {
       nombre_usuario: userData.nombre_usuario,
       contraseña: userData.contraseña,
       direccion: userData.direccion,
-      fecha_nacimiento: userData.fecha_nacimiento,
       email: userData.email,
       telefono: userData.telefono,
       calificacion: userData.calificacion
@@ -117,9 +121,13 @@ router.put("/walkers/:walker_id", (req, res) => {
       message: "Paseador modificado exitosamente",
     });
   }).catch((error) => {
-    // Si algo falla, revierte la transacción
-    res.status(500).send('Error al modificar paseador');
-    console.error('Error al modificar paseador:', error);
+       res.status(500).json({
+        ok: false,
+        status: 500,
+        message: "Error al modificar paseador",
+        error: error.errors[0].message
+      })
+      console.error('Error al modificar paseador:', error);
   });
 })
 

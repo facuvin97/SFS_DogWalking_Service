@@ -82,9 +82,14 @@ router.post("/clients", async (req, res) => {
     });
     
   }).catch((error) => {
-    // Si algo falla, revierte la transacción
-    res.status(500).send('Error al crear cliente');
-    console.error('Error al crear usuario y cliente:', error);
+        // Si algo falla, revierte la transacción
+        res.status(500).json({
+          ok: false,
+          status: 500,
+          message: "Error al crear cliente",
+          error: error.errors[0].message
+        })
+        console.error('Error al crear cliente :', error);
   });
 })
 
@@ -116,8 +121,13 @@ router.put("/clients/:client_id", async (req, res) => {
       message: "Cliente modificado exitosamente",
     })
   } catch (error) {
-      res.status(500).send('Error al modificar cliente')
-      console.error('Error al modificar cliente:', error)
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: "Error al crear paseador",
+      error: error.errors[0].message
+    })
+    console.error('Error al crear paseador:', error);
   }
 })
 

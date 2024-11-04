@@ -65,12 +65,12 @@ router.post("/login", async (req, res) => {
 
     // Si no se encuentra el usuario, responde con un error de autenticación
     if (!user) {
-      return res.status(401).json({ ok: false, message: "Usuario no encontrado" });
+      return res.status(401).json({ ok: false, message: "Usuario y/o contraseña incorrecta" });
     }
 
     // Comprueba si la contraseña coincide con la almacenada en la base de datos
     if (password !== user.contraseña) {
-      return res.status(401).json({ ok: false, message: "Contraseña incorrecta" });
+      return res.status(401).json({ ok: false, message: "Usuario y/o contraseña incorrecta" });
     }
 
     const client = await Client.findByPk(user.id);
