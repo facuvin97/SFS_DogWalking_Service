@@ -143,7 +143,7 @@ router.get('/services/walker/:walker_id', async (req, res) => {
           model: Client,
           include: {
             model: User,
-            attributes: ['nombre_usuario']
+            attributes: ['nombre_usuario', 'calificacion']
           }
         }
       ]

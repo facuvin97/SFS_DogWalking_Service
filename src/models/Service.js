@@ -49,11 +49,8 @@ Service.init(
       type: DataTypes.STRING,
       validate: {
         len: {
-          args: [1, 255],
+          args: [0, 255],
           msg: 'El campo "nota" debe tener entre 1 y 255 caracteres'
-        },
-        notEmpty: {
-          msg: 'El campo "nota" no puede estar vacío'
         }
       }
     },
