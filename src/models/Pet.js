@@ -34,7 +34,6 @@ Pet.init({
   },
   image: {
     type: DataTypes.STRING,
-    allowNull: true,
     validate: {
       isUrl: true  // La imagen debe ser una URL válida
     }

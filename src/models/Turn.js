@@ -10,7 +10,7 @@ Turn.init({
     validate: {
       // Validación personalizada para verificar si cada día está en la lista permitida
       isValidDay: function(value) {
-        const allowedDays = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+        const allowedDays = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         for (const day of value) {
           if (!allowedDays.includes(day)) {
             throw new Error(`"${day}" no es un día válido`);
