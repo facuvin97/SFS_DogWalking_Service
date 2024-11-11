@@ -34,9 +34,7 @@ Pet.init({
   },
   image: {
     type: DataTypes.STRING,
-    validate: {
-      isUrl: true  // La imagen debe ser una URL válida
-    }
+    allowNull: true,
   }
 }, {
   sequelize,
