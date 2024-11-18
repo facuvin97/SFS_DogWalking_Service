@@ -7,7 +7,10 @@ const Service = require("../models/Service.js");
 const router = require("express").Router();
 const { MercadoPagoConfig, OAuth } = require("mercadopago");
 const globalConstants = require("../const/globalConstants");
+const jwt = require("jsonwebtoken");
+
 const bcrypt = require("bcryptjs");
+
 const authMiddleware = require("../middlewares/authMiddleware.js");
 
 // devuelve todo los walkers, incluyendo info de usuario y turno
@@ -33,7 +36,7 @@ router.get("/walkers", authMiddleware, async (req, res) => {
 });
 
 // login walker para mobile
-router.post("/login/client", async (req, res) => {
+router.post("/login/walker", async (req, res) => {
   const { username, password } = req.body;
 
   try {
@@ -56,7 +59,7 @@ router.post("/login/client", async (req, res) => {
     }
 
     const walker = await Walker.findByPk(user.id);
-    if (client === null)
+    if (walker === null)
       return res
         .status(401)
         .json({ ok: false, message: "Usuario no es paseador" });

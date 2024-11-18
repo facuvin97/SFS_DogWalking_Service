@@ -7,6 +7,7 @@ const Turn = require("../models/Turn.js");
 const Service = require("../models/Service.js");
 const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = require("express").Router();
