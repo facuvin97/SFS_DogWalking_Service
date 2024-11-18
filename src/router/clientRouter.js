@@ -107,14 +107,12 @@ router.post("/clients", async (req, res) => {
       // Crea el usuario
       const user = await User.create(
         {
-          foto: userData.foto,
           nombre_usuario: userData.nombre_usuario,
           contraseña: password,
           direccion: userData.direccion,
           fecha_nacimiento: userData.fecha_nacimiento,
           email: userData.email,
           telefono: userData.telefono,
-          calificacion: userData.calificacion,
         },
         { transaction: t }
       );

@@ -101,14 +101,12 @@ router.post("/walkers", (req, res, next) => {
       // Crea el usuario
       const user = await User.create(
         {
-          foto: userData.foto,
           nombre_usuario: userData.nombre_usuario,
           contraseña: password,
           direccion: userData.direccion,
           fecha_nacimiento: userData.fecha_nacimiento,
           email: userData.email,
           telefono: userData.telefono,
-          calificacion: userData.calificacion,
         },
         { transaction: t }
       );
@@ -133,7 +131,7 @@ router.post("/walkers", (req, res, next) => {
         ok: false,
         status: 500,
         message: "Error al crear paseador",
-        error: error.errors[0].message,
+        error: error,
       });
       console.error("Error al crear paseador:", error);
     });
