@@ -68,11 +68,11 @@ router.post("/login/client", async (req, res) => {
       return res
         .status(401)
         .json({ ok: false, message: "Usuario no es cliente" });
-    logedUser = user.toJSON();
+    loggedUser = user.toJSON();
     // Si el usuario y la contraseña son correctos, devuelves el usuario encontrado
     res.status(200).json({
       ok: true,
-      logedUser,
+      loggedUser,
       token: jwt.sign({ userId: user.id }, process.env.JWT_SECRET),
     });
   } catch (error) {
