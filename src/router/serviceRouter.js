@@ -165,6 +165,126 @@ router.get('/services/walker/:walker_id', async (req, res) => {
   }
 });
 
+
+// Obtener los servicios futuros de un paseador, con su turno
+router.get('/services/walker/future/:walker_id', async (req, res) => {
+  const walkerId = req.params.walker_id;
+  
+   // Obtener la fecha y hora actual
+   const fechaHoraActual = new Date();
+
+   // Restar 3 horas
+   fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+   // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+   const formattedFechaActual = fechaHoraActual.toISOString()
+   .slice(0, 10) // 'yyyy-MM-dd'
+
+  try {
+    const turns = await Turn.findAll({
+      where: {
+        WalkerId: walkerId
+      },
+    })
+
+
+    // Extraer los IDs de los turnos
+    const turnIds = turns.map(turno => turno.id);
+
+
+    const services = await Service.findAll({
+      where: {
+        finalizado : false,
+        TurnId: {
+          [Op.in]: turnIds,
+        },
+        fecha: {
+          [Op.gte]: formattedFechaActual, // Condición para traer servicios desde hoy en adelante
+        },
+      },
+      include: [
+        {
+          model: Turn,
+        },
+        {
+          model: Client,
+          include: {
+            model: User,
+            attributes: ['nombre_usuario', 'calificacion']
+          }
+        }
+      ]
+    });
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      body: services
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al obtener los servicios',
+      error: error.message
+    });
+    console.error('Error al obtener los servicios:', error);
+  }
+});
+
+// Obtener los servicios finalizados de un paseador, con su turno
+router.get('/services/walker/finished/:walker_id', async (req, res) => {
+  const walkerId = req.params.walker_id;
+  try {
+    const turns = await Turn.findAll({
+      where: {
+        WalkerId: walkerId
+      },
+    })
+
+
+    // Extraer los IDs de los turnos
+    const turnIds = turns.map(turno => turno.id);
+
+
+    const services = await Service.findAll({
+      where: {
+        finalizado : true,
+        TurnId: {
+          [Op.in]: turnIds
+        }
+      },
+      include: [
+        {
+          model: Turn,
+        },
+        {
+          model: Client,
+          include: {
+            model: User,
+            attributes: ['nombre_usuario', 'calificacion']
+          }
+        }
+      ]
+    });
+
+    res.status(200).json({
+      ok: true,
+      status: 200,
+      body: services
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      status: 500,
+      message: 'Error al obtener los servicios',
+      error: error.message
+    });
+    console.error('Error al obtener los servicios:', error);
+  }
+});
+
+
 // Obtener un servicio por su id
 router.get('/services/:service_id', async (req, res) => {
   const id = req.params.service_id;
