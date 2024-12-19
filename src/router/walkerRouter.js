@@ -64,11 +64,12 @@ router.post("/login/walker", async (req, res) => {
         .status(401)
         .json({ ok: false, message: "Usuario no es paseador" });
 
-    // Combina las propiedades de user y walker en un solo objeto
+    // Omito la contraseña
     const { contraseña, ...userProps } = user.toJSON();
-    const loggedUser = {   
-      ...userProps,  
-      ...walker.toJSON(), 
+    // Combina las propiedades de user y walker en un solo objeto
+    const loggedUser = {
+      ...userProps,
+      ...walker.toJSON(),
     };
 
     // Si el usuario y la contraseña son correctos, devuelves el usuario encontrado

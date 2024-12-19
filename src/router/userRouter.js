@@ -101,6 +101,102 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Modificar datos básicos del usuario (incluyendo la contraseña)
+router.put("/users/password/:user_id", authMiddleware, async (req, res) => {
+  try {
+    const userData = req.body;
+    const id = req.params.user_id; // Corregido el parámetro
+    const newContraseña = userData.newContraseña
+      ? bcrypt.hashSync(userData.newContraseña, 10)
+      : null; // Solo generar hash si hay nueva contraseña
+    const contraseña = userData.contraseña;
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({
+        ok: false,
+        status: 404,
+        message: "Usuario no encontrado",
+      });
+    }
+
+    // Comparar contraseña actual
+    const isMatch = await bcrypt.compare(contraseña, user.contraseña);
+    if (!isMatch) {
+      return res.status(400).json({
+        ok: false,
+        status: 400,
+        message: "La contraseña actual no es correcta",
+      });
+    }
+
+    // Modificar el usuario
+    await User.update(
+      {
+        contraseña: newContraseña,
+        direccion: userData.direccion,
+        email: userData.email,
+        telefono: userData.telefono,
+      },
+      {
+        where: {
+          id: id,
+        },
+      }
+    );
+
+    return res.status(200).json({
+      ok: true,
+      status: 200,
+      message: "Usuario modificado exitosamente",
+    });
+  } catch (error) {
+    console.error("Error al modificar usuario:", error);
+    return res.status(500).json({
+      ok: false,
+      status: 500,
+      message: "Error al modificar usuario",
+      error: error.message || "Error inesperado",
+    });
+  }
+});
+
+// Modificar datos básicos del usuario (sin cambiar contraseña)
+router.put("/users/:user_id", authMiddleware, async (req, res) => {
+  try {
+    const userData = req.body;
+    const id = req.params.user_id; // Corregido el parámetro
+
+    // Modificar el usuario
+    await User.update(
+      {
+        direccion: userData.direccion,
+        email: userData.email,
+        telefono: userData.telefono,
+      },
+      {
+        where: {
+          id: id,
+        },
+      }
+    );
+
+    return res.status(200).json({
+      ok: true,
+      status: 200,
+      message: "Usuario modificado exitosamente",
+    });
+  } catch (error) {
+    console.error("Error al modificar usuario:", error);
+    return res.status(500).json({
+      ok: false,
+      status: 500,
+      message: "Error al modificar usuario",
+      error: error.message || "Error inesperado",
+    });
+  }
+});
+
 //agregar o cambiar foto de perfil
 router.post(
   "/image/single/:nameImage",
@@ -121,12 +217,10 @@ router.post(
       // Actualiza el campo 'foto' del usuario con el nombre del archivo subido
       await user.update({ foto: req.file.filename });
 
-      res
-        .status(200)
-        .json({
-          ok: true,
-          message: "Imagen de perfil actualizada exitosamente",
-        });
+      res.status(200).json({
+        ok: true,
+        message: "Imagen de perfil actualizada exitosamente",
+      });
     } catch (error) {
       console.error("Error al actualizar imagen de perfil:", error);
       res
@@ -192,13 +286,11 @@ router.post(
       // Actualiza el campo 'fotos' del walker
       await walker.update({ fotos: updatedFotos });
 
-      res
-        .status(200)
-        .json({
-          ok: true,
-          message: "Foto subida con éxito",
-          newImage: { url: uniqueFoto },
-        });
+      res.status(200).json({
+        ok: true,
+        message: "Foto subida con éxito",
+        newImage: { url: uniqueFoto },
+      });
     } catch (error) {
       console.error("Error al actualizar imagen de perfil:", error);
       res
