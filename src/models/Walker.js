@@ -7,7 +7,7 @@ class Walker extends User {}
 Walker.init({
   fotos: {
     type: DataTypes.JSON,
-    allowNull: true 
+    defaultValue: [],
   }, 
   efectivo: {
     type: DataTypes.BOOLEAN,  
