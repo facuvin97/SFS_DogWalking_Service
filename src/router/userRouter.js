@@ -155,7 +155,7 @@ router.put("/users/password/:user_id", authMiddleware, async (req, res) => {
     return res.status(500).json({
       ok: false,
       status: 500,
-      message: "Error al modificar usuario",
+      message: error.message || "Error al modificar usuario",
       error: error.message || "Error inesperado",
     });
   }
@@ -191,7 +191,7 @@ router.put("/users/:user_id", authMiddleware, async (req, res) => {
     return res.status(500).json({
       ok: false,
       status: 500,
-      message: "Error al modificar usuario",
+      message: error.message || "Error al modificar usuario",
       error: error.message || "Error inesperado",
     });
   }
