@@ -8,6 +8,8 @@ const router = require("express").Router();
 const { MercadoPagoConfig, OAuth } = require("mercadopago");
 const globalConstants = require("../const/globalConstants");
 const jwt = require("jsonwebtoken");
+const fs = require('fs');
+const path = require('path');
 
 const bcrypt = require("bcryptjs");
 
@@ -375,6 +377,57 @@ router.get("/walkers/byBill/:billId", authMiddleware, async (req, res) => {
     message: "ok",
     body: bill.Service.Turn.Walker.mercadopago,
   });
+});
+
+router.delete('/image/:walkerId', authMiddleware, (req, res) => {
+  sequelize
+    .transaction(async (t) => {
+      const { walkerId } = req.params;
+      const { imageUrl } = req.body;
+
+      // Busca el paseador
+      const walker = await Walker.findByPk(walkerId, { transaction: t });
+      if (!walker) {
+        return res.status(404).json({
+          ok: false,
+          message: 'No existe el paseador con ese ID',
+        });
+      }
+
+      // Busca en walker.fotos si existe la imagen
+      const image = walker.fotos.find((foto) => foto.url === imageUrl);
+      if (!image) {
+        return res.status(404).json({
+          ok: false,
+          message: 'No existe la imagen con ese URL',
+        });
+      }
+
+      // Elimina la imagen de walker.fotos
+      walker.fotos = walker.fotos.filter((foto) => foto.url !== imageUrl);
+
+      // Guarda el walker en la base de datos
+      await walker.save({ transaction: t });
+
+      // Elimina la imagen del sistema de archivos
+      const imagePath = path.join(__dirname, '../../images/', image.url);
+      fs.unlinkSync(imagePath);
+
+      // Responde con éxito
+      res.status(200).json({
+        ok: true,
+        message: 'Imagen eliminada correctamente',
+      });
+    })
+    .catch((error) => {
+      // Si algo falla, revierte la transacción y responde con un error
+      console.error('Error al eliminar la imagen:', error);
+      res.status(500).json({
+        ok: false,
+        message: 'Error al eliminar la imagen',
+        error: error.message,
+      });
+    });
 });
 
 module.exports = router;
