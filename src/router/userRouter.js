@@ -30,14 +30,18 @@ const images = multer({
         const originalName = file.originalname;
         const extension = path.extname(originalName);
         const baseName = path.basename(originalName, extension);
+        //creo la variable fecha en formato yyyy-dd-MM hh:mm:ss
+        const date = new Date().toISOString().slice(0, 19);
 
         if (extension !== ".png" && extension !== ".jpg") {
           // si la extension no es jpg ni png, la hago png
-          finalName = baseName + ".png";
+          finalName = baseName + date + ".png";
         } else {
           // si es jpg o png la guardo con esa extension
-          finalName = baseName + extension;
+          finalName = baseName + date + extension;
         }
+
+        console.log("finalName", finalName);
 
         let counter = 1;
 
