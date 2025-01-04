@@ -31,7 +31,7 @@ const images = multer({
         const extension = path.extname(originalName);
         const baseName = path.basename(originalName, extension);
         //creo la variable fecha en formato yyyy-dd-MM hh:mm:ss
-        const date = new Date().toISOString().slice(0, 19);
+        const date = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
 
         if (extension !== ".png" && extension !== ".jpg") {
           // si la extension no es jpg ni png, la hago png
@@ -41,8 +41,6 @@ const images = multer({
           finalName = baseName + date + extension;
         }
 
-        console.log("finalName", finalName);
-
         let counter = 1;
 
         while (fs.existsSync(path.join("images", finalName))) {
@@ -51,7 +49,6 @@ const images = multer({
         }
       }
 
-      console.log("finalName", finalName);
       cb(null, finalName);
     },
   }),
