@@ -84,7 +84,7 @@ router.put("/turns/:turn_id", async (req, res) => {
     }
 
     // Actualiza el turno
-    const updatedTurn = await Turn.update(
+    await Turn.update(
       {
         dias: turnData.dias,
         hora_inicio: turnData.hora_inicio,
@@ -99,9 +99,17 @@ router.put("/turns/:turn_id", async (req, res) => {
         },
       }
     );
+
+    // Obtener el turno actualizado con los datos relacionados
+    const updatedTurn = await Turn.findOne({
+      where: { id: id },
+      include: Servicio,
+    });
+
     res.status(200).json({
       ok: true,
       status: 200,
+      body: updatedTurn,
       message: "Turno modificado exitosamente",
     });
   } catch (error) {
