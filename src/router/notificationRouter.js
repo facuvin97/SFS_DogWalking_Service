@@ -60,7 +60,8 @@ router.get('/notifications/:userId', async (req, res) => {
         fechaHora: {
           [Op.gte]: formattedThirtyDaysAgo 
         }
-      }
+      },
+      limit: 25,
     });
     
     res.status(200).json(notifications);
