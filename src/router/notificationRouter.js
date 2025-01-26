@@ -61,6 +61,7 @@ router.get('/notifications/:userId', async (req, res) => {
           [Op.gte]: formattedThirtyDaysAgo 
         }
       },
+      order: [['fechaHora', 'DESC']],
       limit: 25,
     });
     
