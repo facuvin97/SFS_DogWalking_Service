@@ -145,7 +145,7 @@ router.get("/contacts/clients/:userId", async (req, res) => {
               { senderId: client.id, receiverId: userId },
             ],
           },
-          attributes: ['id','createdAt', 'senderId', 'receiverId'],
+          attributes: ['id', 'createdAt', 'senderId', 'receiverId', 'read'],
           order: [['createdAt', 'DESC']], // Ordenar por fecha más reciente
           limit: 1, // Obtener solo el último mensaje
         });

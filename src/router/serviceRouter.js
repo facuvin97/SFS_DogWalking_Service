@@ -356,7 +356,7 @@ router.post('/services', async (req, res) => {
     const turn = await Turn.findByPk(serviceData.TurnId, {transaction: t})
 
     // envio una notificacion al paseador
-    await Notification.create({
+    const notification = await Notification.create({
       titulo: 'Nueva solicitud de servicio',
       contenido: `El cliente ${client.nombre_usuario} ha solicitado un servicio para el dia ${serviceData.fecha}`,
       fechaHora: formattedFechaHoraActual,
@@ -385,7 +385,7 @@ router.post('/services', async (req, res) => {
       return socketEntry ? socketEntry[1] : null; // Devolver solo el socket
     }
 
-    // Emitir el mensaje mediante socket.io al paseador
+    // Emitir el mensaje y la notificacion mediante socket.io al paseador
     const targetSocket = getSocketByUserId(turn.WalkerId);
     if (targetSocket) {
      targetSocket.emit('receiveMessage', {
@@ -396,6 +396,8 @@ router.post('/services', async (req, res) => {
        sent: newMessage.sent,
        read: newMessage.read,
      });
+     targetSocket.emit('notification', notification.toJSON());
+     targetSocket.emit('refreshServices');
     }
 
     res.status(201).json({
@@ -414,7 +416,6 @@ router.post('/services', async (req, res) => {
     console.error('Error al crear servicio:', error);
   })
 
-  // console.log('\n\n\nfecha despues de transeccion', res)
 });
 
 // Modificar un servicio (solo se usa para cambiar el valor de aceptado, cuando el paseador acepta la solicitud)
@@ -471,7 +472,7 @@ router.put('/services/:service_id', async (req, res) => {
 
 
     // envio una notificacion al cliente
-    await Notification.create({
+    const notification = await Notification.create({
       titulo: 'Solicitud de servicio aceptada',
       contenido: `Su servicio para el dia ${existingService.fecha} ha sido confirmado`,
       userId: existingService.ClientId,
@@ -509,6 +510,8 @@ router.put('/services/:service_id', async (req, res) => {
        sent: newMessage.sent,
        read: newMessage.read,
      });
+     targetSocket.emit('notification', notification.toJSON());
+     targetSocket.emit('refreshServices');
     }
 
     res.status(200).json({
@@ -580,20 +583,47 @@ router.delete('/services/:service_id', async (req, res) => {
       });
     }
 
+    const io = getIO(); // Obtén la instancia de io
+
+    // Función auxiliar para obtener el socket de un usuario por userId
+    function getSocketByUserId(userId) {
+      const socketEntry = Array.from(io.sockets.sockets).find(
+        ([, socket]) => socket.handshake.auth.userId.toString() === userId.toString()
+      );
+      
+      return socketEntry ? socketEntry[1] : null; // Devolver solo el socket
+    }
+
+    let notification;
+
     if (userType === 'walker') {
-      await Notification.create({
+      notification = await Notification.create({
         titulo: 'Servicio cancelado',
         contenido: `El servicio para la fecha ${fechaFormateada} ha sido cancelado`,
         userId: userId,
         fechaHora: formattedFechaHoraActual
       }, { transaction: t });
+
+      // Emitir la notificacion mediante socket.io
+      const targetSocket = getSocketByUserId(userId);
+      if (targetSocket) {
+      targetSocket.emit('notification', notification.toJSON());
+      targetSocket.emit('refreshServices');
+      }
     } else if (userType === 'client') {
-      await Notification.create({
+      notification = await Notification.create({
         titulo: 'Servicio cancelado',
         contenido: `El usuario ${nombreCliente} ha cancelado el servicio para la fecha ${fechaFormateada}`,
         userId: userId,
         fechaHora: formattedFechaHoraActual
       }, { transaction: t });
+
+      // Emitir la notificacion mediante socket.io
+      const targetSocket = getSocketByUserId(userId);
+      if (targetSocket) {
+      targetSocket.emit('notification', notification.toJSON());
+      targetSocket.emit('refreshServices');
+      }
     } else { //si no viene lo que espero en walker, hago rollback
       await t.rollback();
       res.status(500).json({

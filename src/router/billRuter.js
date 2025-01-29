@@ -11,6 +11,7 @@ const router = require("express").Router()
 const { format } = require('date-fns');
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const globalConstants = require('../const/globalConstants.js');
+const { getSocketByUserId } = require('../config/socket.js');
 
 
 
@@ -214,29 +215,40 @@ router.put("/bills/:bill_id", async (req, res) => {
 
       // Enviar una notificación al paseador
       if(!pendiente && pagado){
-        await Notification.create({
-        titulo: 'Factura pagada',
-        contenido: `Su servicio del día ${service.fecha}, con el cliente ${service.Client.User.nombre_usuario} ha sido pagado`,
-        userId: turn.WalkerId,
-        fechaHora: formattedFechaHoraActual
-      }, { transaction: t });
-      await t.commit();
-  
-      return res.status(200).json({
-        ok: true,
-        status: 200,
-        message: "Factura pagada exitosamente",
-      });
-    }
+        const notification = await Notification.create({
+          titulo: 'Factura pagada',
+          contenido: `Su servicio del día ${service.fecha}, con el cliente ${service.Client.User.nombre_usuario} ha sido pagado`,
+          userId: turn.WalkerId,
+          fechaHora: formattedFechaHoraActual
+        }, { transaction: t });
+        
+        const targetSocket = getSocketByUserId(turn.WalkerId);
+        if (targetSocket) {
+          targetSocket.emit('notification', notification.toJSON());
+        }
+        
+        await t.commit();
+        return res.status(200).json({
+          ok: true,
+          status: 200,
+          message: "Factura pagada exitosamente",
+        });
+      }
 
       if(pendiente && !pagado){
-        await Notification.create({
+        const notification = await Notification.create({
         titulo: 'Factura pendiente',
         contenido: `Su servicio del día ${service.fecha}, con el cliente ${service.Client.User.nombre_usuario} esta pendiente de pago.`,
         userId: turn.WalkerId
       }, { transaction: t });
+
+      const targetSocket = getSocketByUserId(turn.WalkerId);
+      if (targetSocket) {
+        targetSocket.emit('notification', notification.toJSON());
+      }
+      
       await t.commit();
-  
+      
       return res.status(200).json({
         ok: true,
         status: 200,

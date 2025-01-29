@@ -2,6 +2,7 @@ const User = require("../models/User")
 const Notification = require("../models/Notification.js")
 const sequelize = require('../config/db.js');
 const { Op } = require('sequelize');
+const { getSocketByUserId } = require('../config/socket.js');
 
 
 const router = require("express").Router()
@@ -20,6 +21,7 @@ router.post("/notifications", async (req, res) => {
     const formattedFechaHoraActual = fechaHoraActual.toISOString()
       .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
       .replace('T', ' '); // Cambia 'T' por un espacio
+  
 
     const notification = await Notification.create({
       titulo: notificationData.titulo,
@@ -28,6 +30,11 @@ router.post("/notifications", async (req, res) => {
       leido: notificationData.leido,
       userId: notificationData.userId
     });
+
+    const targetSocket = getSocketByUserId(notificationData.userId);
+    if (targetSocket) {
+      targetSocket.emit('notification', notification.toJSON());
+    }
 
     res.status(201).json({
       ok: true,

@@ -176,8 +176,7 @@ router.delete("/turns/:turn_id", async (req, res) => {
       // Enviar notificaciones
       if (servicios.length > 0) {
         for (const servicio of servicios) {
-          await Notification.create(
-            {
+          const notification = await Notification.create({
               titulo: "Servicio cancelado",
               contenido: `El servicio para la fecha ${servicio.fecha} ha sido cancelado`,
               userId: servicio.ClientId,
@@ -185,6 +184,11 @@ router.delete("/turns/:turn_id", async (req, res) => {
             },
             { transaction: t }
           );
+          const targetSocket = getSocketByUserId(servicio.ClientId);
+          if (targetSocket) {
+            targetSocket.emit('notification', notification.toJSON());
+            targetSocket.emit('refreshServices');
+          }
         }
       }
 
