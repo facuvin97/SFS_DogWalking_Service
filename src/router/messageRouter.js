@@ -61,7 +61,6 @@ router.get('/messages/:senderId/:reciverId', async (req, res) => {
       },
       order: [['createdAt', 'ASC']] // Ordenar por fecha de creación (opcional)
     });
-    
     res.status(200).json({
       ok: true,
       status: 200,
@@ -150,10 +149,18 @@ router.get("/contacts/clients/:userId", async (req, res) => {
           limit: 1, // Obtener solo el último mensaje
         });
 
+        const lastMessageReceived = await Message.findOne({
+          where:{ senderId: client.id, receiverId: userId },
+          attributes: ['id', 'createdAt', 'senderId', 'receiverId', 'read'],
+          order: [['createdAt', 'DESC']], // Ordenar por fecha más reciente
+          limit: 1, // Obtener solo el último mensaje
+        });
+
         // Agregar el último mensaje como un campo adicional en el cliente
         return {
           ...client.toJSON(), // Convertimos el modelo Sequelize a un objeto plano
           lastMessage: lastMessage || null, // Si no hay mensaje, retorna null
+          lastMessageReceived: lastMessageReceived || null, // Si no hay mensaje recibido, retorna null
         };
       })
     );

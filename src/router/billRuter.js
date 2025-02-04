@@ -224,7 +224,7 @@ router.put("/bills/:bill_id", async (req, res) => {
         
         const targetSocket = getSocketByUserId(turn.WalkerId);
         if (targetSocket) {
-          targetSocket.emit('notification', notification.toJSON());
+          targetSocket[1].emit('notification', notification.toJSON());
         }
         
         await t.commit();
@@ -239,12 +239,13 @@ router.put("/bills/:bill_id", async (req, res) => {
         const notification = await Notification.create({
         titulo: 'Factura pendiente',
         contenido: `Su servicio del día ${service.fecha}, con el cliente ${service.Client.User.nombre_usuario} esta pendiente de pago.`,
-        userId: turn.WalkerId
+        userId: turn.WalkerId,
+        fechaHora: formattedFechaHoraActual
       }, { transaction: t });
 
       const targetSocket = getSocketByUserId(turn.WalkerId);
       if (targetSocket) {
-        targetSocket.emit('notification', notification.toJSON());
+        targetSocket[1].emit('notification', notification.toJSON());
       }
       
       await t.commit();

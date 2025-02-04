@@ -3,6 +3,7 @@ const Servicio = require("../models/Service.js");
 const Notification = require("../models/Notification.js");
 const sequelize = require("../config/db.js");
 const router = require("express").Router();
+const { getSocketByUserId } = require("../config/socket.js");
 
 //Obtener los turnos de un paseador
 router.get("/turns/walker/:walker_id", async (req, res) => {
@@ -79,21 +80,80 @@ router.post("/turns", async (req, res) => {
   }
 });
 
-//Modificar un turno
+// Modificar un turno
 router.put("/turns/:turn_id", async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const id = req.params.turn_id;
     const turnData = req.body;
 
     // Verificar si el turno existe
-    const existingTurn = await Turn.findOne({ where: { id: id } });
-
+    const existingTurn = await Turn.findOne({ where: { id: id }, transaction });
     if (!existingTurn) {
+      await transaction.rollback();
       return res.status(404).json({
         ok: false,
         status: 404,
         message: "Turno no encontrado",
       });
+    }
+
+    // Verificar servicios asociados al turno
+    const turnServices = await Servicio.findAll({
+      where: { TurnId: id, aceptado: true, finalizado: false },
+      transaction,
+    });
+    if (turnServices.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        ok: false,
+        status: 400,
+        message: "Turno no puede ser modificado, ya tiene servicios asociados",
+      });
+    }
+
+    // Verificar solicitudes de servicio asociadas al turno
+    const turnRequests = await Servicio.findAll({
+      where: { TurnId: id, aceptado: false },
+      transaction,
+    });
+
+    // Si hay solicitudes pendientes, eliminarlas y notificar a los clientes
+    if (turnRequests.length > 0) {
+      await Servicio.destroy({
+        where: { TurnId: id, aceptado: false },
+        transaction,
+      });
+      // Obtener la fecha y hora actual
+      const fechaHoraActual = new Date();
+
+      // Restar 3 horas
+      fechaHoraActual.setHours(fechaHoraActual.getHours() - 3);
+
+      // Formatear la fecha a 'yyyy-MM-dd HH:mm'
+      const formattedFechaHoraActual = fechaHoraActual
+        .toISOString()
+        .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
+        .replace("T", " "); // Cambia 'T' por un espacio
+      
+      for (const servicio of turnRequests) {
+        const notification = await Notification.create({
+          titulo: "Servicio rechazado",
+          contenido: `La solicitud de servicio para la fecha ${servicio.fecha} ha sido rechazada por cambios en el turno`,
+          userId: servicio.ClientId,
+          fechaHora: formattedFechaHoraActual,
+        }, { transaction });
+        
+        const targetSocket = getSocketByUserId(servicio.ClientId);
+        if (targetSocket) {
+          targetSocket[1].emit("notification", notification.toJSON());
+          targetSocket[1].emit("refreshServices");
+        }
+        const targetSocketWalker = getSocketByUserId(turnData.WalkerId);
+        if (targetSocketWalker) {
+          targetSocketWalker[1].emit("refreshServices");
+        }
+      }
     }
 
     // Actualiza el turno
@@ -104,20 +164,19 @@ router.put("/turns/:turn_id", async (req, res) => {
         hora_fin: turnData.hora_fin,
         tarifa: turnData.tarifa,
         zona: turnData.zona,
-        WalkerId: turnData.WalkerId, // Asigna el ID del Walker al turno
+        WalkerId: turnData.WalkerId,
       },
-      {
-        where: {
-          id: id,
-        },
-      }
+      { where: { id: id }, transaction }
     );
 
     // Obtener el turno actualizado con los datos relacionados
     const updatedTurn = await Turn.findOne({
       where: { id: id },
       include: Servicio,
+      transaction,
     });
+
+    await transaction.commit();
 
     res.status(200).json({
       ok: true,
@@ -126,10 +185,12 @@ router.put("/turns/:turn_id", async (req, res) => {
       message: "Turno modificado exitosamente",
     });
   } catch (error) {
-    res.status(500).send("Error al modificar turno");
+    await transaction.rollback();
+    res.status(500).json({ ok: false, message: "Error al modificar turno" });
     console.error("Error al modificar turno:", error);
   }
 });
+
 
 router.delete("/turns/:turn_id", async (req, res) => {
   sequelize
@@ -186,8 +247,12 @@ router.delete("/turns/:turn_id", async (req, res) => {
           );
           const targetSocket = getSocketByUserId(servicio.ClientId);
           if (targetSocket) {
-            targetSocket.emit('notification', notification.toJSON());
-            targetSocket.emit('refreshServices');
+            targetSocket[1].emit('notification', notification.toJSON());
+            targetSocket[1].emit('refreshServices');
+          }
+          const targetSocketWalker = getSocketByUserId(turnData.WalkerId);
+          if (targetSocketWalker) {
+            targetSocketWalker[1].emit("refreshServices");
           }
         }
       }

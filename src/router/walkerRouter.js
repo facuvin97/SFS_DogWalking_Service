@@ -355,6 +355,7 @@ router.get("/walkers/byBill/:billId", authMiddleware, async (req, res) => {
         model: Turn, // Incluir el modelo Turn dentro de Service
         include: {
           model: Walker, // Incluir el modelo Walker dentro de Turn
+            attributes: ['mercadopago', 'efectivo'],
         },
       },
     },
@@ -370,12 +371,11 @@ router.get("/walkers/byBill/:billId", authMiddleware, async (req, res) => {
   }
 
   const walker = bill.Service.Turn.Walker;
-
   res.status(200).json({
     ok: true,
     status: 200,
     message: "ok",
-    body: bill.Service.Turn.Walker.mercadopago,
+    body: walker,
   });
 });
 
