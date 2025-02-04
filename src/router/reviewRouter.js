@@ -8,17 +8,13 @@ async function updateUserRating(userId) {
   const reviews = await Review.findAll({ where: { receiverId: userId } });
   const totalReviews = reviews.length;
 
-  console.log("Reviews: ", reviews);
-  console.log("Reviews.lenght: ", reviews.length);
-
   if (totalReviews > 0) {
     const sumRatings = reviews.reduce(
       (sum, review) => sum + review.valoracion,
       0
     );
     const averageRating = Math.round(sumRatings / totalReviews);
-    console.log("sumRatings: ", sumRatings);
-    console.log("averageRating: ", averageRating);
+
     await User.update(
       { calificacion: averageRating },
       { where: { id: userId } }

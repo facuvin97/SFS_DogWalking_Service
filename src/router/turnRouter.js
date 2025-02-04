@@ -42,28 +42,20 @@ router.post("/turns", async (req, res) => {
     const turnData = req.body;
 
     // Crea el turno dentro de la transacción
-    const turn = await Turn.create(
-      {
-        dias: turnData.dias,
-        hora_inicio: turnData.hora_inicio,
-        hora_fin: turnData.hora_fin,
-        tarifa: turnData.tarifa,
-        zona: turnData.zona,
-        WalkerId: turnData.WalkerId, // Asigna el ID del Walker al turno
-      },
-    );
+    const turn = await Turn.create({
+      dias: turnData.dias,
+      hora_inicio: turnData.hora_inicio,
+      hora_fin: turnData.hora_fin,
+      tarifa: turnData.tarifa,
+      zona: turnData.zona,
+      WalkerId: turnData.WalkerId, // Asigna el ID del Walker al turno
+    });
 
-    console.log("turn: ", turn.dataValues.id);
     // Obtén el turno creado, incluyendo relaciones, dentro de la misma transacción
-    const turnCreated = await Turn.findByPk(
-      turn.dataValues.id,
-      {       
-        include: Servicio,
-      },
-    );
+    const turnCreated = await Turn.findByPk(turn.dataValues.id, {
+      include: Servicio,
+    });
 
-    
-    console.log("turnCreated: ", turnCreated);
     res.status(201).json({
       ok: true,
       status: 201,
@@ -237,7 +229,8 @@ router.delete("/turns/:turn_id", async (req, res) => {
       // Enviar notificaciones
       if (servicios.length > 0) {
         for (const servicio of servicios) {
-          const notification = await Notification.create({
+          const notification = await Notification.create(
+            {
               titulo: "Servicio cancelado",
               contenido: `El servicio para la fecha ${servicio.fecha} ha sido cancelado`,
               userId: servicio.ClientId,
