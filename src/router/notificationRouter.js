@@ -33,7 +33,7 @@ router.post("/notifications", async (req, res) => {
 
     const targetSocket = getSocketByUserId(notificationData.userId);
     if (targetSocket) {
-      targetSocket.emit('notification', notification.toJSON());
+      targetSocket[1].emit('notification', notification.toJSON());
     }
 
     res.status(201).json({

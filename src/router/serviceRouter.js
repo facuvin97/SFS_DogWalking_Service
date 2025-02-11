@@ -277,6 +277,7 @@ router.get("/services/:service_id", async (req, res) => {
       where: {
         id: id,
       },
+      include: Turn,  
     });
     if (service) {
       res.status(200).json({
