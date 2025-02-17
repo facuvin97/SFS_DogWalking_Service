@@ -269,7 +269,7 @@ router.put("/bills/:bill_id", async (req, res) => {
       return res.status(200).json({
         ok: true,
         status: 200,
-        message: "La factura tiene un el pago pendiente",
+        message: "La factura tiene el pago pendiente",
       });
     }
   } catch (error) {
