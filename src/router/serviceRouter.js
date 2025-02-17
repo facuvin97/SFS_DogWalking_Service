@@ -277,7 +277,13 @@ router.get("/services/:service_id", async (req, res) => {
       where: {
         id: id,
       },
+      include: {
+        model: Turn,
+        attributes: ["WalkerId"],
+      },
+      
     });
+
     if (service) {
       res.status(200).json({
         ok: true,
