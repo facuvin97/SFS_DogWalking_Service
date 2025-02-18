@@ -92,7 +92,14 @@ router.get("/walkers/:walker_id", authMiddleware, async (req, res) => {
     where: {
       id: id,
     },
-    include: User,
+    include: [{
+      model: User,
+      attributes: { exclude: ['contraseña'] },
+    },
+      {
+        model: Turn, // Asegúrate de importar el modelo Turn
+      },
+    ],
   });
   res.status(200).json({
     ok: true,
