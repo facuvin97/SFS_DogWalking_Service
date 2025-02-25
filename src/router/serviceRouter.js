@@ -576,6 +576,19 @@ router.delete("/services/:service_id", async (req, res) => {
 
       const nombreCliente = req.body.nombreCliente ?? null;
 
+      // busco una factura asociada al servicio
+      const bill = await Bill.findOne({
+        where: { ServiceId: id },
+        transaction: t,
+      });
+
+      if (bill) { // si existe
+        //elimino la factura
+        await bill.destroy({
+          transaction: t,
+        });
+      }
+
       // Elimina el servicio
       const deleteService = await Service.destroy({
         where: { id: id },
@@ -714,6 +727,13 @@ router.put("/services/started/:service_id", async (req, res) => {
           targetSocket[1].emit("startOrFinishTurn", { id: turn.id });
           console.log("emito evento de comenzar turno");
         }
+      }
+
+      // emito evento al cliente
+      const clientSocket = getSocketByUserId(existingService.ClientId);
+      if (clientSocket) {
+        clientSocket[1].emit("serviceStarted", { id: existingService.id });
+        console.log("emito evento de comenzar servicio");
       }
 
       res.status(200).json({

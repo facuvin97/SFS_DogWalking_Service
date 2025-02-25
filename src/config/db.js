@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 
 // Configura la conexión a la base de datos
-const sequelize = new Sequelize("tepaseo", "root", "root", {
+const sequelize = new Sequelize("proyecto_final_bios", "root", "root", {
   host: "localhost",
   dialect: "mysql",
   timezone: "-03:00", // Zona horaria de Uruguay (GMT -0300)
