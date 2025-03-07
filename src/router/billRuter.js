@@ -23,6 +23,7 @@ router.post("/bills/pay", async (req, res) => {
         model: Service, // Incluir el modelo Service
         include: {
           model: Turn, // Incluir el modelo Turn dentro de Service
+          paranoid: false,
           include: {
             model: Walker, // Incluir el modelo Walker dentro de Turn
           },
@@ -112,6 +113,7 @@ router.get("/bills/client/:client_id", async (req, res) => {
       include: {
         model: Turn,
         attributes: ["WalkerId"],
+        paranoid: false,
         include: {
           model: Walker,
           attributes: ["mercadopago", "efectivo"],

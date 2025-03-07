@@ -8,8 +8,8 @@ const router = require("express").Router();
 const { MercadoPagoConfig, OAuth } = require("mercadopago");
 const globalConstants = require("../const/globalConstants");
 const jwt = require("jsonwebtoken");
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 const bcrypt = require("bcryptjs");
 
@@ -24,6 +24,7 @@ router.get("/walkers", authMiddleware, async (req, res) => {
       },
       {
         model: Turn,
+        paranoid: false,
       },
     ],
   });
@@ -92,12 +93,14 @@ router.get("/walkers/:walker_id", authMiddleware, async (req, res) => {
     where: {
       id: id,
     },
-    include: [{
-      model: User,
-      attributes: { exclude: ['contraseña'] },
-    },
+    include: [
       {
-        model: Turn, // Asegúrate de importar el modelo Turn
+        model: User,
+        attributes: { exclude: ["contraseña"] },
+      },
+      {
+        model: Turn,
+        paranoid: false,
       },
     ],
   });
@@ -360,9 +363,10 @@ router.get("/walkers/byBill/:billId", authMiddleware, async (req, res) => {
       model: Service, // Incluir el modelo Service
       include: {
         model: Turn, // Incluir el modelo Turn dentro de Service
+        paranoid: false,
         include: {
           model: Walker, // Incluir el modelo Walker dentro de Turn
-            attributes: ['mercadopago', 'efectivo'],
+          attributes: ["mercadopago", "efectivo"],
         },
       },
     },
@@ -386,7 +390,7 @@ router.get("/walkers/byBill/:billId", authMiddleware, async (req, res) => {
   });
 });
 
-router.delete('/image/:walkerId', authMiddleware, (req, res) => {
+router.delete("/image/:walkerId", authMiddleware, (req, res) => {
   sequelize
     .transaction(async (t) => {
       const { walkerId } = req.params;
@@ -397,7 +401,7 @@ router.delete('/image/:walkerId', authMiddleware, (req, res) => {
       if (!walker) {
         return res.status(404).json({
           ok: false,
-          message: 'No existe el paseador con ese ID',
+          message: "No existe el paseador con ese ID",
         });
       }
 
@@ -406,7 +410,7 @@ router.delete('/image/:walkerId', authMiddleware, (req, res) => {
       if (!image) {
         return res.status(404).json({
           ok: false,
-          message: 'No existe la imagen con ese URL',
+          message: "No existe la imagen con ese URL",
         });
       }
 
@@ -417,21 +421,21 @@ router.delete('/image/:walkerId', authMiddleware, (req, res) => {
       await walker.save({ transaction: t });
 
       // Elimina la imagen del sistema de archivos
-      const imagePath = path.join(__dirname, '../../images/', image.url);
+      const imagePath = path.join(__dirname, "../../images/", image.url);
       fs.unlinkSync(imagePath);
 
       // Responde con éxito
       res.status(200).json({
         ok: true,
-        message: 'Imagen eliminada correctamente',
+        message: "Imagen eliminada correctamente",
       });
     })
     .catch((error) => {
       // Si algo falla, revierte la transacción y responde con un error
-      console.error('Error al eliminar la imagen:', error);
+      console.error("Error al eliminar la imagen:", error);
       res.status(500).json({
         ok: false,
-        message: 'Error al eliminar la imagen',
+        message: "Error al eliminar la imagen",
         error: error.message,
       });
     });

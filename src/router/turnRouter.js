@@ -127,15 +127,18 @@ router.put("/turns/:turn_id", async (req, res) => {
         .toISOString()
         .slice(0, 16) // 'yyyy-MM-ddTHH:mm'
         .replace("T", " "); // Cambia 'T' por un espacio
-      
+
       for (const servicio of turnRequests) {
-        const notification = await Notification.create({
-          titulo: "Servicio rechazado",
-          contenido: `La solicitud de servicio para la fecha ${servicio.fecha} ha sido rechazada por cambios en el turno`,
-          userId: servicio.ClientId,
-          fechaHora: formattedFechaHoraActual,
-        }, { transaction });
-        
+        const notification = await Notification.create(
+          {
+            titulo: "Servicio rechazado",
+            contenido: `La solicitud de servicio para la fecha ${servicio.fecha} ha sido rechazada por cambios en el turno`,
+            userId: servicio.ClientId,
+            fechaHora: formattedFechaHoraActual,
+          },
+          { transaction }
+        );
+
         const targetSocket = getSocketByUserId(servicio.ClientId);
         if (targetSocket) {
           targetSocket[1].emit("notification", notification.toJSON());
@@ -183,24 +186,43 @@ router.put("/turns/:turn_id", async (req, res) => {
   }
 });
 
-
 router.delete("/turns/:turn_id", async (req, res) => {
   sequelize
     .transaction(async (t) => {
       const id = req.params.turn_id;
 
-      // traigo todos los servicios del turno a eliminar
+      //traigo el turno
+      const turn = await Turn.findByPk(id);
+      const walkerId = turn.WalkerId;
+
+      // Si el turno tiene servicios aceptados, no se puede eliminar
+      const turnServices = await Servicio.findAll({
+        where: { TurnId: id, aceptado: true, finalizado: false },
+        transaction: t,
+      });
+      if (turnServices.length > 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          ok: false,
+          status: 400,
+          message: "Turno no puede ser eliminado, ya tiene servicios asociados",
+        });
+      }
+
+      // traigo todas las solicitudes de servicio del turno a eliminar
       const servicios = await Servicio.findAll({
         where: {
           TurnId: id,
+          aceptado: false,
         },
       });
 
-      // Eliminar los servicios asociados al turno
+      // Eliminar las solicitudes de servicios asociados al turno
       if (servicios.length > 0) {
-        const deleteServices = await Servicio.destroy({
+        await Servicio.destroy({
           where: {
             TurnId: id,
+            aceptado: false,
           },
           transaction: t,
         });
@@ -240,10 +262,10 @@ router.delete("/turns/:turn_id", async (req, res) => {
           );
           const targetSocket = getSocketByUserId(servicio.ClientId);
           if (targetSocket) {
-            targetSocket[1].emit('notification', notification.toJSON());
-            targetSocket[1].emit('refreshServices');
+            targetSocket[1].emit("notification", notification.toJSON());
+            targetSocket[1].emit("refreshServices");
           }
-          const targetSocketWalker = getSocketByUserId(turnData.WalkerId);
+          const targetSocketWalker = getSocketByUserId(walkerId);
           if (targetSocketWalker) {
             targetSocketWalker[1].emit("refreshServices");
           }
@@ -265,7 +287,11 @@ router.delete("/turns/:turn_id", async (req, res) => {
       }
     })
     .catch((error) => {
-      res.status(500).send("Error al eliminar turno");
+      res.status(500).json({
+        ok: false,
+        status: 500,
+        message: "Error al eliminar turno: " + error.message,
+      });
       console.error("Error al eliminar turno:", error);
     });
 });

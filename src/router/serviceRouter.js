@@ -22,7 +22,10 @@ router.get("/services/client/:client_id", async (req, res) => {
       where: {
         ClientId: clientId,
       },
-      include: Turn,
+      include: {
+        model: Turn,
+        paranoid: false,
+      },
     });
     res.status(200).json({
       ok: true,
@@ -125,6 +128,7 @@ router.get("/services/walker/:walker_id", async (req, res) => {
       include: [
         {
           model: Turn,
+          paranoid: false,
           include: {
             model: Walker,
             include: User,
@@ -192,6 +196,7 @@ router.get("/services/walker/future/:walker_id", async (req, res) => {
       include: [
         {
           model: Turn,
+          paranoid: false,
         },
         {
           model: Client,
@@ -242,6 +247,7 @@ router.get("/services/walker/finished/:walker_id", async (req, res) => {
       include: [
         {
           model: Turn,
+          paranoid: false,
         },
         {
           model: Client,
@@ -279,9 +285,9 @@ router.get("/services/:service_id", async (req, res) => {
       },
       include: {
         model: Turn,
+        paranoid: false,
         attributes: ["WalkerId"],
       },
-      
     });
 
     if (service) {
@@ -397,11 +403,14 @@ router.post("/services", async (req, res) => {
         targetSocket.emit("refreshServices");
       }
 
+      const serviceDataResponse = service.toJSON();
+      serviceDataResponse.Turn = turn;
+
       res.status(201).json({
         ok: true,
         status: 201,
         message: "Servicio creado exitosamente",
-        data: service,
+        data: serviceDataResponse,
       });
     })
     .catch((error) => {
@@ -570,7 +579,7 @@ router.delete("/services/:service_id", async (req, res) => {
       // Aca tenemos que diferenciar que tipo de usuario esta eliminando el servicio, para ver a quien le mandamos la notificacion
       const userType = req.body.execUserType;
 
-      const userId = req.body.userId;
+      const userId = req.body.userId; // id del usuario que va a recibir la notificacion
       const fecha = req.body.fecha;
       const fechaFormateada = format(fecha, "dd/MM/yyyy");
 
@@ -582,7 +591,8 @@ router.delete("/services/:service_id", async (req, res) => {
         transaction: t,
       });
 
-      if (bill) { // si existe
+      if (bill) {
+        // si existe
         //elimino la factura
         await bill.destroy({
           transaction: t,
