@@ -87,6 +87,47 @@ router.post("/login/walker", async (req, res) => {
   }
 });
 
+router.get("/walkers/update/:walker_id", authMiddleware, async (req, res) => {
+  try {
+    const { walker_id } = req.params;
+    // Busca el usuario por su nombre de usuario en la base de datos
+    const user = await User.findByPk( walker_id);
+
+
+    // Si no se encuentra el usuario o la contraseña no coincide, responde con un error de autenticación
+    if (!user) {
+      return res
+        .status(401)
+        .json({ ok: false, message: "Usuario no encontrado" });
+    }
+
+    const walker = await Walker.findByPk(user.id);
+    
+    if (walker === null)
+      return res
+        .status(401)
+        .json({ ok: false, message: "Usuario no es paseador" });
+
+    // Omito la contraseña
+    const { contraseña, ...userProps } = user.toJSON();
+    // Combina las propiedades de user y walker en un solo objeto
+    const loggedUser = {
+      ...userProps,
+      ...walker.toJSON(),
+    };
+
+    // Si el usuario y la contraseña son correctos, devuelves el usuario encontrado
+    res.status(200).json({
+      ok: true,
+      body:loggedUser,
+    });
+    console.log(loggedUser);
+  } catch (error) {
+    console.error("Error al obtener el usuario:", error);
+    res.status(500).json({ ok: false, message: "Error al obtener el usuario" });
+  }
+});
+
 router.get("/walkers/:walker_id", authMiddleware, async (req, res) => {
   const id = req.params.walker_id;
   const walker = await Walker.findOne({
@@ -252,9 +293,7 @@ router.delete("/walkers/:walker_id", authMiddleware, (req, res) => {
 });
 
 // asociar mercado pago
-router.put(
-  "/walkers/mercadopago/:walker_id",
-  authMiddleware,
+router.put(  "/walkers/mercadopago/:walker_id",  authMiddleware,
   async (req, res) => {
     try {
       const reqData = req.body;

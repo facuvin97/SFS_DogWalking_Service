@@ -12,6 +12,7 @@ const { format } = require("date-fns");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const globalConstants = require("../const/globalConstants.js");
 const { getSocketByUserId } = require("../config/socket.js");
+const { response } = require("../app/app.js");
 
 // Endpoint para crear una preferencia de pago
 router.post("/bills/pay", async (req, res) => {
@@ -80,6 +81,7 @@ router.post("/bills/pay", async (req, res) => {
     res.json({
       id: result.id, // ID de la preferencia
       publicKey: walker.public_key, // Public key del paseador
+      url: result.body.init_point, // URL de MercadoPago para redirigir al cliente
     });
   } catch (error) {
     console.log(error);
@@ -117,6 +119,10 @@ router.get("/bills/client/:client_id", async (req, res) => {
         include: {
           model: Walker,
           attributes: ["mercadopago", "efectivo"],
+          include: {
+            model: User,
+            attributes: ["nombre_usuario"],
+          },
         },
       },
     },
@@ -156,6 +162,10 @@ router.put("/bills/:bill_id", async (req, res) => {
     // Verificar si la factura existe
     const existingBill = await Bill.findOne({
       where: { id: id },
+      include: {
+        model: Service,
+        paranoid: false,
+      },
       transaction: t,
     });
 
@@ -206,6 +216,11 @@ router.put("/bills/:bill_id", async (req, res) => {
         transaction: t,
       }
     );
+
+    const clientTargetSocket = getSocketByUserId(existingBill.Service.ClientId);
+    if (clientTargetSocket) {
+      clientTargetSocket[1].emit("refreshBills");
+    }
 
     const service = await Service.findByPk(existingBill.ServiceId, {
       include: { model: Client, include: { model: User } },

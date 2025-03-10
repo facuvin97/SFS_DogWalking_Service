@@ -400,7 +400,7 @@ router.post("/services", async (req, res) => {
           read: newMessage.read,
         });
         targetSocket.emit("notification", notification.toJSON());
-        targetSocket.emit("refreshServices");
+        targetSocket.emit("shServices");
       }
 
       const serviceDataResponse = service.toJSON();
@@ -536,6 +536,7 @@ router.put("/services/:service_id", async (req, res) => {
         });
         targetSocket.emit("notification", notification.toJSON());
         targetSocket.emit("refreshServices");
+        targetSocket.emit("refreshBills")
       }
 
       res.status(200).json({
@@ -597,6 +598,11 @@ router.delete("/services/:service_id", async (req, res) => {
         await bill.destroy({
           transaction: t,
         });
+
+        const clientTargetSocket = getSocketByUserId(bill.Service.ClientId);
+        if (clientTargetSocket) {
+          clientTargetSocket[1].emit("refreshBills");
+        }
       }
 
       // Elimina el servicio
