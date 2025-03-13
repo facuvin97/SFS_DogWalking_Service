@@ -400,7 +400,7 @@ router.post("/services", async (req, res) => {
           read: newMessage.read,
         });
         targetSocket.emit("notification", notification.toJSON());
-        targetSocket.emit("shServices");
+        targetSocket.emit("refreshServices");
       }
 
       const serviceDataResponse = service.toJSON();

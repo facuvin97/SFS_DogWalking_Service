@@ -89,6 +89,7 @@ router.post("/login/walker", async (req, res) => {
 
 router.get("/walkers/update/:walker_id", authMiddleware, async (req, res) => {
   try {
+    
     const { walker_id } = req.params;
     // Busca el usuario por su nombre de usuario en la base de datos
     const user = await User.findByPk( walker_id);
